@@ -5,6 +5,28 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<Version>0.1.0</Version>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Title>ConsoleRenderer</Title>
+	<Authors>NinovdMark</Authors>
+	<Description>Library to render to the console</Description>
+	<Copyright>2023 Nino van der Mark</Copyright>
+	<PackageProjectUrl>https://github.com/NinovanderMark/ConsoleRenderer</PackageProjectUrl>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/NinovanderMark/ConsoleRenderer</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>console,rendering,graphics,retro,simple,library</PackageTags>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
