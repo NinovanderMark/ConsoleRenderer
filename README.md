@@ -3,6 +3,11 @@ This is a simple and easy-to-use library to help render images to the console th
 
 I learned programming with QBasic on MS-DOS and miss the days where you can get graphics on screen with just a few lines of code, ConsoleRenderer is a bit of an homage to that minimal style of development. Modern graphics libraries tend to have a lot of ceremony to set up a render window and get things on screen, this library aims to be the opposite of that.
 
+## What's the performance like?
+It varies, but on my Lenovo P51 laptop the pong example runs at ~800fps on Windows in a 120x30 size Powershell terminal inside Windows Terminal. The same size WSL terminal on Ubuntu runs at ~3600fps, which is considerably faster. Updating every character on screen every frame is a lot slower, and can be as low as 10fps on Windows, or ~50fps on Ubuntu in WSL.
+
+I welcome more rigorous benchmarks, as well as suggestions to improve performance, but the bottom line is that it's fast enough for anything that doesn't redraw the whole screen every frame.
+
 # Why is it on GitHub
 It's on GitHub because I enjoy little projects like this, and because I believe in sharing what you enjoy with others, who may also enjoy it.
 
