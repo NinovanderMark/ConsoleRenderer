@@ -4,7 +4,7 @@
     {
         static int Main(string[] args)
         {
-            if (args[0] == "pong")
+            if (args.Length < 1 || args[0] == "pong")
             {
                 int fps = 60;
                 if (args.Length > 1)
@@ -14,7 +14,7 @@
                 return 0;
             }
 
-            Console.WriteLine("No sample provided");
+            Console.WriteLine($"Unknown sample provided {args[0]}");
             return 0;
         }
 
