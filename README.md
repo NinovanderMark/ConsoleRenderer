@@ -22,7 +22,7 @@ This example renders an outline around the edges of the screen, regardless of th
 To render pixels to the screen, the `Set()` operation can be used to change the value of any screen pixel in the buffer, which will be rendered to the screen the next time we call `Render()`. The following snippet renders a diagonal line of asterisks, starting top left and running down until reaching either the right or bottom side of the terminal window.
 ```csharp
 var canvas = new ConsoleCanvas();
-for (int t = 0; t < canvas.Width && t < canvas.Height; t++)
+for (int t = 0; t+1 < canvas.Width && t < canvas.Height; t++)
 	canvas.Set(t*2, t);
 
 canvas.Render();
