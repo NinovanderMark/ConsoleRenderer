@@ -8,9 +8,9 @@ Simply create a new .NET C# Console application using a provided template, and t
 ```csharp
 static int Main(string[] args)
 {
-	var canvas = new ConsoleCanvas();
-	canvas.CreateBorder();
-	canvas.Render();
+	var canvas = new ConsoleCanvas()
+		.CreateBorder()
+		.Render();
 
 	Console.ReadKey();
 	return 0;
