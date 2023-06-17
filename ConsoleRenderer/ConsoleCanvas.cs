@@ -1,4 +1,7 @@
-﻿namespace ConsoleRenderer
+﻿using System.Drawing;
+using System.Reflection.PortableExecutable;
+
+namespace ConsoleRenderer
 {
     public class ConsoleCanvas
     {
@@ -117,6 +120,55 @@
                         _pixels[y][x] = new Pixel { Character = '*', Foreground = color }; // Replace with nice ASCII edges
                     else
                         _pixels[y][x] = new Pixel { Character = ' ', Foreground = color };
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Creates a rectangle on the canvas 
+        /// </summary>
+        /// <param name="startX">Left edge of the rectangle</param>
+        /// <param name="startY">Top edge of the rectangle</param>
+        /// <param name="width">Width of the rectangle</param>
+        /// <param name="height">Height of the rectangle</param>
+        /// <param name="character">Character to use for drawing the rectangle's borders</param>
+        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character = '*')
+        {
+            return CreateRectangle(startX, startY, width, height, character, _defaultForegroundColor, _defaultBackgroundColor);
+        }
+
+        /// <summary>
+        /// Creates a rectangle on the canvas 
+        /// </summary>
+        /// <param name="startX">Left edge of the rectangle</param>
+        /// <param name="startY">Top edge of the rectangle</param>
+        /// <param name="width">Width of the rectangle</param>
+        /// <param name="height">Height of the rectangle</param>
+        /// <param name="character">Character to use for drawing the rectangle's borders</param>
+        /// <param name="border">Color to draw the border with</param>
+        /// <param name="fill">Color to fill the rectangle with</param>
+        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor border, ConsoleColor fill)
+        {
+            for (int y = startY; y < _height && y-startY < height; y++)
+            {
+                for (int x = startX; x < _width && x-startX < width; x++)
+                {
+                    if (y == startY || y + 1 == startY + height|| x == startX || x + 1 == startX + width)
+                        _pixels[y][x] = new Pixel 
+                        { 
+                            Character = character, 
+                            Foreground = border,
+                            Background = _defaultBackgroundColor,
+                        };
+                    else
+                        _pixels[y][x] = new Pixel 
+                        { 
+                            Character = ' ', 
+                            Foreground = _defaultForegroundColor,
+                            Background = fill
+                        };
                 }
             }
 
