@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ConsoleRenderer.Samples.Pong": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
