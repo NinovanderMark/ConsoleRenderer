@@ -1,8 +1,16 @@
 {
   "profiles": {
-    "ConsoleRenderer.Examples": {
+    "Pong": {
+      "commandName": "Project",
+      "commandLineArgs": "pong"
+    },
+    "Rectangle": {
       "commandName": "Project",
       "commandLineArgs": "rectangles"
+    },
+    "White Noise": {
+      "commandName": "Project",
+      "commandLineArgs": "noise"
     }
   }
 }

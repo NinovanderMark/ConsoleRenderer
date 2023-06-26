@@ -19,6 +19,9 @@ namespace ConsoleRenderer.Examples
                 case "rectangles":
                     return RectanglesDefinition();
 
+                case "noise":
+                    return WhiteNoiseDefinition();
+
                 default:
                     return PongDefinition();
             }
@@ -34,6 +37,12 @@ namespace ConsoleRenderer.Examples
         {
             var rectangle = new Rectangles();
             return new ProgramDefinition(rectangle, rectangle.Tick);
+        }
+
+        internal static ProgramDefinition WhiteNoiseDefinition()
+        {
+            var noise = new WhiteNoise();
+            return new ProgramDefinition(noise, noise.Tick);
         }
     }
 }
