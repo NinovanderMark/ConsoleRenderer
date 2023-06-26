@@ -168,6 +168,8 @@ namespace ConsoleRenderer
 
             Console.CursorTop = 0;
             Console.CursorLeft = 0;
+            int cursorTop = 0;
+            int cursorLeft = 0;
 
             for (int y = 0; y < Height; y++)
             {
@@ -182,11 +184,17 @@ namespace ConsoleRenderer
                     if (y >= Console.WindowHeight)
                         continue;
 
-                    if (Console.CursorLeft != x)
+                    if (cursorLeft != x)
+                    {
                         Console.CursorLeft = x;
+                        cursorLeft = x;
+                    }
 
-                    if (Console.CursorTop != y)
+                    if (cursorTop != y)
+                    {
                         Console.CursorTop = y;
+                        cursorTop = y;
+                    }
 
                     if (_pixels[y][x].Foreground != Console.ForegroundColor)
                         Console.ForegroundColor = _pixels[y][x].Foreground;
@@ -195,6 +203,7 @@ namespace ConsoleRenderer
                         Console.BackgroundColor = _pixels[y][x].Background;
 
                     Console.Write(_pixels[y][x].Character);
+                    cursorLeft++;
 
                     _previous[y][x] = _pixels[y][x];
                 }
