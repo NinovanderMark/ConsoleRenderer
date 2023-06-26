@@ -8,9 +8,13 @@
       "commandName": "Project",
       "commandLineArgs": "rectangles"
     },
+    "Color Noise": {
+      "commandName": "Project",
+      "commandLineArgs": "colornoise"
+    },
     "White Noise": {
       "commandName": "Project",
-      "commandLineArgs": "noise"
+      "commandLineArgs": "whitenoise"
     }
   }
 }

@@ -1,5 +1,5 @@
 # What is ConsoleRenderer
-This is a simple and easy-to-use library to help render images in terminal windows that works on Windows or Linux. This allows a developer to easily build retro looking applications using C# and .NET.
+This is a simple and easy-to-use library to help render images in terminal windows that works on Windows, Linux and presumably MacOs. This allows a developer to easily build cross-platform, retro looking graphical applications for the terminal using C# and .NET.
 
 I learned programming with QBasic on MS-DOS and miss the days where you can get graphics on screen with just a few lines of code, ConsoleRenderer is a bit of an homage to that minimal style of development. Modern graphics libraries tend to have a lot of ceremony to set up a render window and get things on screen, this library aims to be the opposite of that.
 
@@ -32,16 +32,19 @@ canvas.Render();
 Please review the example implementations in the Examples project for additional code samples and interesting visual demo's.
 
 The Examples project can also be run with one of the following arguments to run each example program.
-- Noise
 - Pong
 - Rectangles
+- ColorNoise
+- WhiteNoise
 
 # What's the performance like?
-Since version `0.2.0` the performance has been much improved, particularly on Windows systems. That said, redrawing large portions of the screen is still fairly slow on both Linux & Windows as the `Noise` example demonstrates.
+Since version `0.2.0` the performance has been much improved, particularly on Windows systems. That said, redrawing large portions of the screen is still fairly slow on both Linux & Windows as the `WhiteNoise` and `ColorNoise` examples demonstrate.
 
-Generally it seems that performance is negatively impacted by operations such as repositioning the cursor, as well as changing either the foreground or background color. Limiting how often these operations are called for any given frame can yield some fairly speedy drawing, as shown by the `Rectangles` example.
+Generally it seems that performance is negatively impacted most by operations such as repositioning the cursor during rendering, as well as changing either the foreground or background color. 
 
-The latter also benefits from optimizations done to prevent redrawing pixels that haven't changed. Since new rectangles are no larger than 1/4 of the screen surface, this allows for framerates above 100 fps on Windows, and a multiple of that for Linux systems.
+Contiguous regions with the same colors perform best, as well as redrawing only limited portions of the screen each frame. A good example is the `Rectangles` demo, which renders at about 150fps on Windows and over 600fps on Linux on my Lenovo P51 laptop.
+
+To sum up, it runs fairly quickly if you can navigate some of the above limitations.
 
 # Contributing
 If there are changes you'd like to see, feel free to create an issue or a PR.

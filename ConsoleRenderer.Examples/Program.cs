@@ -14,7 +14,8 @@
             Console.CursorVisible = false;
 
             // Get the program we want to run
-            var program = ExampleSelector.GetProgramDefinition(args);
+            var program = new ExampleSelector().GetProgramDefinition(args);
+
             while (true)
             {
                 if (Console.KeyAvailable)

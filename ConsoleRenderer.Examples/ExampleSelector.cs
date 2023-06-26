@@ -1,48 +1,35 @@
 ﻿using ConsoleRenderer.Examples.Programs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleRenderer.Examples
 {
-    internal static class ExampleSelector
+    public class ExampleSelector
     {
-        internal static ProgramDefinition GetProgramDefinition(string[] args)
-        {
-            if (args.Length == 0)
-                return PongDefinition();
+        private readonly Dictionary<string, ProgramDefinition> _definitions = new Dictionary<string, ProgramDefinition>();
 
-            switch (args[0].ToLower())
-            {
-                case "rectangles":
-                    return RectanglesDefinition();
-
-                case "noise":
-                    return WhiteNoiseDefinition();
-
-                default:
-                    return PongDefinition();
-            }
-        }
-
-        internal static ProgramDefinition PongDefinition()
+        public ExampleSelector()
         {
             var pong = new Pong(60);
-            return new ProgramDefinition(pong, pong.Tick);
+            _definitions.Add("pong", new ProgramDefinition(pong, pong.Tick));
+
+            var rectangles = new Rectangles();
+            _definitions.Add("rectangles", new ProgramDefinition(rectangles, rectangles.Tick));
+
+            var whiteNoise = new WhiteNoise();
+            _definitions.Add("whitenoise", new ProgramDefinition(whiteNoise, whiteNoise.Tick));
+
+            var colorNoise = new ColorNoise();
+            _definitions.Add("colornoise", new ProgramDefinition(colorNoise, colorNoise.Tick));
         }
 
-        internal static ProgramDefinition RectanglesDefinition()
+        internal ProgramDefinition GetProgramDefinition(string[] args)
         {
-            var rectangle = new Rectangles();
-            return new ProgramDefinition(rectangle, rectangle.Tick);
-        }
+            if (args.Length == 0)
+                return _definitions["pong"];
 
-        internal static ProgramDefinition WhiteNoiseDefinition()
-        {
-            var noise = new Noise();
-            return new ProgramDefinition(noise, noise.Tick);
+            if (_definitions.TryGetValue(args[0], out var programDefinition))
+                return programDefinition;
+
+            return _definitions["pong"];
         }
     }
 }
