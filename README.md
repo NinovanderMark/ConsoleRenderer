@@ -1,5 +1,5 @@
 # What is ConsoleRenderer
-This is a simple and easy-to-use library to help render images to the console that works on Windows or Linux. This allows a developer to easily build retro looking applications using C# and .NET.
+This is a simple and easy-to-use library to help render images in terminal windows that works on Windows or Linux. This allows a developer to easily build retro looking applications using C# and .NET.
 
 I learned programming with QBasic on MS-DOS and miss the days where you can get graphics on screen with just a few lines of code, ConsoleRenderer is a bit of an homage to that minimal style of development. Modern graphics libraries tend to have a lot of ceremony to set up a render window and get things on screen, this library aims to be the opposite of that.
 
@@ -28,12 +28,20 @@ for (int t = 0; t*2 < canvas.Width && t < canvas.Height; t++)
 canvas.Render();
 ```
 
-Please review the example implementations in the Samples directory of the code repository for additional code samples.
+## Other examples
+Please review the example implementations in the Examples project for additional code samples and interesting visual demo's.
+
+The Examples project can also be run with one of the following arguments to run each example program.
+- Noise
+- Pong
+- Rectangles
 
 # What's the performance like?
-It varies, but on my Lenovo P51 laptop the pong example runs at ~800fps on Windows in a 120x30 size Powershell terminal inside Windows Terminal. The same size WSL terminal on Ubuntu runs at ~3600fps, which is considerably faster. Updating every character on screen every frame is a lot slower, and can be as low as 10fps on Windows, or ~50fps on Ubuntu in WSL.
+Since version `0.2.0` the performance has been much improved, particularly on Windows systems. That said, redrawing large portions of the screen is still fairly slow on both Linux & Windows as the `Noise` example demonstrates.
 
-I welcome more rigorous benchmarks, as well as suggestions to improve performance, but the bottom line is that it's fast enough for anything that doesn't redraw the whole screen every frame.
+Generally it seems that performance is negatively impacted by operations such as repositioning the cursor, as well as changing either the foreground or background color. Limiting how often these operations are called for any given frame can yield some fairly speedy drawing, as shown by the `Rectangles` example.
+
+The latter also benefits from optimizations done to prevent redrawing pixels that haven't changed. Since new rectangles are no larger than 1/4 of the screen surface, this allows for framerates above 100 fps on Windows, and a multiple of that for Linux systems.
 
 # Contributing
 If there are changes you'd like to see, feel free to create an issue or a PR.
