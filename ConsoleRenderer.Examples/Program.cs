@@ -1,10 +1,9 @@
-﻿namespace ConsoleRenderer.Samples
+﻿namespace ConsoleRenderer.Examples
 {
     internal class Program
     {
         static int Main(string[] args)
         {
-            var pong = new Pong(60);
             var timer = System.Diagnostics.Stopwatch.StartNew();
             long count = 0;
 
@@ -14,12 +13,14 @@
             // Having the cursor visible causes some unsightly artifacts, which we may want to get rid of
             Console.CursorVisible = false;
 
+            // Get the program we want to run
+            var program = ExampleSelector.GetProgramDefinition(args);
             while (true)
             {
                 if (Console.KeyAvailable)
                     break;
 
-                pong.Tick();
+                program.Tick.Invoke();
                 count++;
             }
 
@@ -31,7 +32,7 @@
             timer.Stop();
             Console.WriteLine();
             Console.WriteLine($"Rendered {count} times in {timer.ElapsedMilliseconds}ms ({count / (timer.ElapsedMilliseconds / 1000f):0.00} fps)");
-            
+
             return 0;
         }
     }

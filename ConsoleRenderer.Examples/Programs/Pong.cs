@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleRenderer.Samples
+namespace ConsoleRenderer.Examples.Programs
 {
     public class Pong
     {
@@ -28,7 +28,7 @@ namespace ConsoleRenderer.Samples
             _framerate = 1000d / framesPerSecond;
         }
 
-        public Pong Tick()
+        public void Tick()
         {
             _canvas.Clear();
             _canvas.CreateBorder();
@@ -55,7 +55,6 @@ namespace ConsoleRenderer.Samples
 
             _canvas.Set(_x, _y, ConsoleColor.Blue);
             _canvas.Render();
-            return this;
         }
     }
 }

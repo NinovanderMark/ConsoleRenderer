@@ -107,11 +107,11 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = startY; y < Height && y - startY < height; y++)
+            for (int y = startY; y < startY + height; y++)
             {
-                for (int x = startX; x < Width && x - startX < width; x++)
+                for (int x = startX; x < startX + width; x++)
                 {
-                    if (y == 0 || y + 1 == Height || x == 0 || x + 1 == Width)
+                    if (y == startY || y + 1 == startY + height || x == startX || x + 1 == startX + width)
                         Set(x, y, character, foreground, background);
                 }
             }

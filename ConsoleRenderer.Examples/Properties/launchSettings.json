@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ConsoleRenderer.Examples": {
+      "commandName": "Project",
+      "commandLineArgs": "rectangles"
+    }
+  }
+}
