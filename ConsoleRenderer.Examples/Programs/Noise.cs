@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace ConsoleRenderer.Examples.Programs
 {
-    internal class WhiteNoise
+    internal class Noise
     {
         private readonly ConsoleCanvas _canvas;
 
-        internal WhiteNoise()
+        internal Noise()
         {
             _canvas = new ConsoleCanvas();
         }

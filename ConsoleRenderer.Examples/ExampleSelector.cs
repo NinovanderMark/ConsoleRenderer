@@ -41,7 +41,7 @@ namespace ConsoleRenderer.Examples
 
         internal static ProgramDefinition WhiteNoiseDefinition()
         {
-            var noise = new WhiteNoise();
+            var noise = new Noise();
             return new ProgramDefinition(noise, noise.Tick);
         }
     }
