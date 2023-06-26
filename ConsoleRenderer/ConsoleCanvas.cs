@@ -168,8 +168,14 @@ namespace ConsoleRenderer
 
             Console.CursorTop = 0;
             Console.CursorLeft = 0;
+
+            // Temporary variables to track Console attributes like size, position and color
             int cursorTop = 0;
             int cursorLeft = 0;
+            int windowWidth = Console.WindowWidth;
+            int windowHeight = Console.WindowHeight;
+            ConsoleColor foregroundColor = Console.ForegroundColor;
+            ConsoleColor backgroundColor = Console.BackgroundColor;
 
             for (int y = 0; y < Height; y++)
             {
@@ -178,10 +184,10 @@ namespace ConsoleRenderer
                     if (_pixels[y][x] == _previous[y][x])
                         continue;
 
-                    if (x >= Console.WindowWidth)
+                    if (x >= windowWidth)
                         continue;
 
-                    if (y >= Console.WindowHeight)
+                    if (y >= windowHeight)
                         continue;
 
                     if (cursorLeft != x)
@@ -196,11 +202,17 @@ namespace ConsoleRenderer
                         cursorTop = y;
                     }
 
-                    if (_pixels[y][x].Foreground != Console.ForegroundColor)
+                    if (_pixels[y][x].Foreground != foregroundColor)
+                    {
                         Console.ForegroundColor = _pixels[y][x].Foreground;
+                        foregroundColor = _pixels[y][x].Foreground;
+                    }
 
-                    if (_pixels[y][x].Background != Console.BackgroundColor)
+                    if (_pixels[y][x].Background != backgroundColor)
+                    {
                         Console.BackgroundColor = _pixels[y][x].Background;
+                        backgroundColor = _pixels[y][x].Background;
+                    }
 
                     Console.Write(_pixels[y][x].Character);
                     cursorLeft++;
