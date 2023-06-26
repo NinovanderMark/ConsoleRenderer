@@ -202,7 +202,7 @@ namespace ConsoleRenderer
                         cursorTop = y;
                     }
 
-                    if (_pixels[y][x].Foreground != foregroundColor)
+                    if (_pixels[y][x].Foreground != foregroundColor && _pixels[y][x].Character != ' ')
                     {
                         Console.ForegroundColor = _pixels[y][x].Foreground;
                         foregroundColor = _pixels[y][x].Foreground;
