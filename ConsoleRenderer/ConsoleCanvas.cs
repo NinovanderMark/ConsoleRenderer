@@ -158,14 +158,6 @@ namespace ConsoleRenderer
         /// </summary>
         public ConsoleCanvas Render()
         {
-            if (_previousWidth != Console.WindowWidth || _previousHeight != Console.WindowHeight)
-            {
-                ClearPixelCache();
-
-                _previousWidth = Console.WindowWidth;
-                _previousHeight = Console.WindowHeight;
-            }
-
             Console.CursorTop = 0;
             Console.CursorLeft = 0;
 
@@ -177,10 +169,21 @@ namespace ConsoleRenderer
             ConsoleColor foregroundColor = Console.ForegroundColor;
             ConsoleColor backgroundColor = Console.BackgroundColor;
 
+            if (_previousWidth != windowWidth || _previousHeight != windowHeight)
+            {
+                ClearPixelCache();
+
+                _previousWidth = windowWidth;
+                _previousHeight = windowHeight;
+            }
+
+            int leftOperations = 0;
+            int backgroundOperations = 0;
+
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
-                {
+                {                        
                     if (_pixels[y][x] == _previous[y][x])
                         continue;
 
@@ -194,6 +197,7 @@ namespace ConsoleRenderer
                     {
                         Console.CursorLeft = x;
                         cursorLeft = x;
+                        leftOperations++;
                     }
 
                     if (cursorTop != y)
@@ -202,7 +206,7 @@ namespace ConsoleRenderer
                         cursorTop = y;
                     }
 
-                    if (_pixels[y][x].Foreground != foregroundColor && _pixels[y][x].Character != ' ')
+                    if (_pixels[y][x].Character != ' ' && _pixels[y][x].Foreground != foregroundColor)
                     {
                         Console.ForegroundColor = _pixels[y][x].Foreground;
                         foregroundColor = _pixels[y][x].Foreground;
@@ -212,6 +216,7 @@ namespace ConsoleRenderer
                     {
                         Console.BackgroundColor = _pixels[y][x].Background;
                         backgroundColor = _pixels[y][x].Background;
+                        backgroundOperations++;
                     }
 
                     Console.Write(_pixels[y][x].Character);
