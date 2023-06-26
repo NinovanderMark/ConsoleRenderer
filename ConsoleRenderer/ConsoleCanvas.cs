@@ -198,9 +198,6 @@ namespace ConsoleRenderer
 
                     _previous[y][x] = _pixels[y][x];
                 }
-
-                //if (y + 1 < Height && y + 1 < Console.WindowHeight)
-                //    Console.WriteLine();
             }
 
             return this;
