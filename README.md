@@ -36,6 +36,8 @@ The Examples project can also be run with one of the following arguments to run 
 - Rectangles
 - ColorNoise
 - WhiteNoise
+- Horizontal
+- Vertical
 
 # What's the performance like?
 Since version `0.2.0` the performance has been much improved, particularly on Windows systems. That said, redrawing large portions of the screen is still fairly slow on both Linux & Windows as the `WhiteNoise` and `ColorNoise` examples demonstrate.

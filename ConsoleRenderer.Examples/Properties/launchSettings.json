@@ -1,16 +1,24 @@
 {
   "profiles": {
+    "Color Noise": {
+      "commandName": "Project",
+      "commandLineArgs": "colornoise"
+    },
+    "Horizontal": {
+      "commandName": "Project",
+      "commandLineArgs": "horizontal"
+    },
     "Pong": {
       "commandName": "Project",
-      "commandLineArgs": "pong"
+      "commandLineArgs": ""
     },
     "Rectangle": {
       "commandName": "Project",
       "commandLineArgs": "rectangles"
     },
-    "Color Noise": {
+    "Vertical": {
       "commandName": "Project",
-      "commandLineArgs": "colornoise"
+      "commandLineArgs": "vertical"
     },
     "White Noise": {
       "commandName": "Project",

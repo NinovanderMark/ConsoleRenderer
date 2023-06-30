@@ -15,6 +15,8 @@
 
             // Get the program we want to run
             var program = new ExampleSelector().GetProgramDefinition(args);
+            if (program == null)
+                return 0;
 
             while (true)
             {
