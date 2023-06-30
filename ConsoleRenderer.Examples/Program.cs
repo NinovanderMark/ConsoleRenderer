@@ -1,26 +1,9 @@
-﻿namespace ConsoleRenderer.Samples
+﻿namespace ConsoleRenderer.Examples
 {
     internal class Program
     {
         static int Main(string[] args)
         {
-            if (args.Length < 1 || args[0] == "pong")
-            {
-                int fps = 60;
-                if (args.Length > 1)
-                    fps = int.Parse(args[1]);
-
-                Pong(fps);
-                return 0;
-            }
-
-            Console.WriteLine($"Unknown sample provided {args[0]}");
-            return 0;
-        }
-
-        static void Pong(int fps)
-        {
-            var pong = new Pong(fps);
             var timer = System.Diagnostics.Stopwatch.StartNew();
             long count = 0;
 
@@ -30,12 +13,17 @@
             // Having the cursor visible causes some unsightly artifacts, which we may want to get rid of
             Console.CursorVisible = false;
 
+            // Get the program we want to run
+            var program = new ExampleSelector().GetProgramDefinition(args);
+            if (program == null)
+                return 0;
+
             while (true)
             {
                 if (Console.KeyAvailable)
                     break;
 
-                pong.Tick();
+                program.Tick.Invoke();
                 count++;
             }
 
@@ -47,6 +35,8 @@
             timer.Stop();
             Console.WriteLine();
             Console.WriteLine($"Rendered {count} times in {timer.ElapsedMilliseconds}ms ({count / (timer.ElapsedMilliseconds / 1000f):0.00} fps)");
+
+            return 0;
         }
     }
 }
