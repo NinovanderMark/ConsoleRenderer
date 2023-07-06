@@ -40,11 +40,13 @@ The Examples project can also be run with one of the following arguments to run 
 - Vertical
 
 # What's the performance like?
-Since version `0.2.0` the performance has been much improved, particularly on Windows systems. That said, redrawing large portions of the screen is still fairly slow on both Linux & Windows as the `WhiteNoise` and `ColorNoise` examples demonstrate.
+As a general disclaimer, I don't have access to a standalone Linux machine and benchmarks have thus far been done through WSL. If anyone wants to do some more rigorous testing, please be my guest!
 
-Generally it seems that performance is negatively impacted most by operations such as repositioning the cursor during rendering, as well as changing either the foreground or background color. 
+The library performs relatively well on anything but redrawing large portions of the screen at once on both Linux & Windows as the `WhiteNoise` and `ColorNoise` examples demonstrate. These examples generally don't achieve framerates north of 10fps on either platform
 
-Contiguous regions with the same colors perform best, as well as redrawing only limited portions of the screen each frame. A good example is the `Rectangles` demo, which renders at about 150fps on Windows and over 600fps on Linux on my Lenovo P51 laptop.
+It seems that performance is negatively impacted most by operations such as repositioning the cursor during rendering, as well as changing either the foreground or background color, meaning that contiguous regions with the same colors perform best, as well as redrawing only limited portions of the screen each frame. 
+
+A good example of significant redraws at higher framerates is the `Rectangles` example, which renders at about 150fps on Windows and over 600fps on Linux on my Lenovo P51 laptop.
 
 Finally, version `0.3.0` added interlaced rendering mode, which can be used to slice the amount of drawing operations in half, thus potentially doubling the framerate, by only updating half the screen rows each frame.
 
@@ -52,3 +54,5 @@ In summary, while it has some limitations, it can be made to run anywhere in the
 
 # Contributing
 If there are changes you'd like to see, feel free to create an issue or a PR.
+
+If you have a project you've built using this library, let me know! I'm always interested to see what people come up with, and I'm eager to include examples of that on this page.
