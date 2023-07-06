@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConsoleRenderer.Examples.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace ConsoleRenderer.Examples.Programs
 {
-    public class Pong
+    internal class Pong : BaseExampleProgram
     {
-        private readonly ConsoleCanvas _canvas;
         private readonly double _framerate;
 
         private int _x;
@@ -20,7 +20,6 @@ namespace ConsoleRenderer.Examples.Programs
 
         public Pong(int framesPerSecond)
         {
-            _canvas = new ConsoleCanvas();
             _xVel = 1;
             _yVel = 1;
 
@@ -28,23 +27,23 @@ namespace ConsoleRenderer.Examples.Programs
             _framerate = 1000d / framesPerSecond;
         }
 
-        public void Tick()
+        public override void Tick()
         {
-            _canvas.Clear();
-            _canvas.CreateBorder();
+            Canvas.Clear();
+            Canvas.CreateBorder();
 
             var currentTime = DateTime.Now;
             if ((currentTime - _previousFrame).TotalMilliseconds >= _framerate)
             {
                 _x += _xVel;
                 _y += _yVel;
-                if (_x < 1 || _x + 1 >= _canvas.Width)
+                if (_x < 1 || _x + 1 >= Canvas.Width)
                 {
                     _xVel = 0 - _xVel;
                     _x += _xVel * 2;
                 }
 
-                if (_y < 1 || _y + 1 >= _canvas.Height)
+                if (_y < 1 || _y + 1 >= Canvas.Height)
                 {
                     _yVel = 0 - _yVel;
                     _y += _yVel * 2;
@@ -53,8 +52,8 @@ namespace ConsoleRenderer.Examples.Programs
                 _previousFrame = currentTime;
             }
 
-            _canvas.Set(_x, _y, ConsoleColor.Blue);
-            _canvas.Render();
+            Canvas.Set(_x, _y, ConsoleColor.Blue);
+            Canvas.Render();
         }
     }
 }

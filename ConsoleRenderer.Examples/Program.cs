@@ -14,7 +14,7 @@
             Console.CursorVisible = false;
 
             // Get the program we want to run
-            var program = new ExampleSelector().GetProgramDefinition(args);
+            var program = new ExampleSelector().GetExampleProgram(args);
             if (program == null)
                 return 0;
 
@@ -23,7 +23,7 @@
                 if (Console.KeyAvailable)
                     break;
 
-                program.Tick.Invoke();
+                program.Tick();
                 count++;
             }
 

@@ -4,17 +4,17 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<Version>0.2.0</Version>
+	<Version>0.3.0</Version>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>ConsoleRenderer</Title>
 	<Authors>NinovdMark</Authors>
-	<Description>Library to render to the console</Description>
+	<Description>Library to easily render graphical elements to the terminal</Description>
 	<Copyright>2023 Nino van der Mark</Copyright>
 	<PackageProjectUrl>https://github.com/NinovanderMark/ConsoleRenderer</PackageProjectUrl>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<RepositoryUrl>https://github.com/NinovanderMark/ConsoleRenderer</RepositoryUrl>
 	<RepositoryType>git</RepositoryType>
-	<PackageTags>console,rendering,graphics,retro,simple,library</PackageTags>
+	<PackageTags>console,terminal,rendering,graphics,retro,simple,library,wrapper,cross-platform,windows,linux</PackageTags>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
