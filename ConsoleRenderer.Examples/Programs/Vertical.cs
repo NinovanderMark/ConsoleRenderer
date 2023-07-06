@@ -13,7 +13,9 @@ namespace ConsoleRenderer.Examples.Programs
 
         public override void Tick()
         {
-            Canvas.CreateRectangle(_x, 0, 7, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Black)
+            Canvas
+                .Clear()
+                .CreateRectangle(_x, 0, 7, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Black)
                 .CreateRectangle(_x + 1, 0, 5, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.DarkGray)
                 .CreateRectangle(_x + 2, 0, 3, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Gray)
                 .CreateRectangle(_x + 3, 0, 1, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.White)
