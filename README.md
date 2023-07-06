@@ -46,7 +46,9 @@ Generally it seems that performance is negatively impacted most by operations su
 
 Contiguous regions with the same colors perform best, as well as redrawing only limited portions of the screen each frame. A good example is the `Rectangles` demo, which renders at about 150fps on Windows and over 600fps on Linux on my Lenovo P51 laptop.
 
-To sum up, it runs fairly quickly if you can navigate some of the above limitations.
+Finally, version `0.3.0` added interlaced rendering mode, which can be used to slice the amount of drawing operations in half, and thus double the framerate, by only updating half the screen rows each frame.
+
+To sum up, it can be made to run fairly quickly for most usecases, but may require some effort on the developer's part for full-screen animations.
 
 # Contributing
 If there are changes you'd like to see, feel free to create an issue or a PR.

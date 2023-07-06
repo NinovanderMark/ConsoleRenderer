@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConsoleRenderer.Examples.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,26 +7,20 @@ using System.Threading.Tasks;
 
 namespace ConsoleRenderer.Examples.Programs
 {
-    public class Horizontal
+    internal class Horizontal : BaseExampleProgram
     {
-        private readonly ConsoleCanvas _canvas;
         private int _x;
 
-        public Horizontal()
+        public override void Tick()
         {
-            _canvas = new ConsoleCanvas();
-        }
-
-        public void Tick()
-        {
-            _canvas.CreateRectangle(_x, 0, 7, _canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Black)
-                .CreateRectangle(_x + 1, 0, 5, _canvas.Height, ' ', ConsoleColor.White, ConsoleColor.DarkGray)
-                .CreateRectangle(_x + 2, 0, 3, _canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Gray)
-                .CreateRectangle(_x + 3, 0, 1, _canvas.Height, ' ', ConsoleColor.White, ConsoleColor.White)
+            Canvas.CreateRectangle(_x, 0, 7, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Black)
+                .CreateRectangle(_x + 1, 0, 5, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.DarkGray)
+                .CreateRectangle(_x + 2, 0, 3, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.Gray)
+                .CreateRectangle(_x + 3, 0, 1, Canvas.Height, ' ', ConsoleColor.White, ConsoleColor.White)
                 .Render();
 
             _x++;
-            if ( _x-3 >= _canvas.Width )
+            if ( _x-3 >= Canvas.Width )
                 _x = -3;
         }
     }

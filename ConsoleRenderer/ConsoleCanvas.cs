@@ -1,28 +1,46 @@
-﻿using System.ComponentModel;
-using System.Drawing;
-using System.Reflection.PortableExecutable;
-
-namespace ConsoleRenderer
+﻿namespace ConsoleRenderer
 {
     public class ConsoleCanvas
     {
+        /// <summary>
+        /// Width of the canvas
+        /// </summary>
         public int Width { get; private set; }
+
+        /// <summary>
+        /// Height of the canvas
+        /// </summary>
         public int Height { get; private set; }
+
+        /// <summary>
+        /// Foreground color to use if none was specified for operations updating the render buffer
+        /// </summary>
         public ConsoleColor DefaultForegroundColor { get; set; }
+
+        /// <summary>
+        /// Background color to use if none was specified for operations updating the render buffer
+        /// </summary>
         public ConsoleColor DefaultBackgroundColor { get; set; }
+
+        /// <summary>
+        /// Interlaced mode alternates between rendering only odd or even rows to the screen each time <see cref="Render"/> is called
+        /// </summary>
+        public bool Interlaced { get; set; }
 
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
 
         private int _previousWidth;
         private int _previousHeight;
+        private bool _oddRows;
         private List<List<Pixel>> _pixels;
         private List<List<Pixel>> _previous;
 
-        public ConsoleCanvas(int width, int height)
+        public ConsoleCanvas(int width, int height, bool interlaced = false)
         {
             Width = width;
             Height = height;
+            Interlaced = interlaced;
             _pixels = new List<List<Pixel>>();
             _previous = new List<List<Pixel>>();
 
@@ -45,7 +63,7 @@ namespace ConsoleRenderer
             }
         }
 
-        public ConsoleCanvas() : this(Console.WindowWidth, Console.WindowHeight)
+        public ConsoleCanvas(bool interlaced = false) : this(Console.WindowWidth, Console.WindowHeight, interlaced)
         {
         }
 
@@ -182,6 +200,10 @@ namespace ConsoleRenderer
 
             for (int y = 0; y < Height; y++)
             {
+                // See if this is one of the rows we should skip in Interlaced mode
+                if ( Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0)) )
+                    continue;
+
                 for (int x = 0; x < Width; x++)
                 {                        
                     if (_pixels[y][x] == _previous[y][x])
@@ -226,6 +248,8 @@ namespace ConsoleRenderer
                 }
             }
 
+            // Swap whether we render odd or even rows next frame
+            _oddRows = !_oddRows;
             return this;
         }
 
