@@ -1,4 +1,8 @@
-﻿namespace ConsoleRenderer
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace ConsoleRenderer
 {
     public class ConsoleCanvas
     {
