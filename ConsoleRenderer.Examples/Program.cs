@@ -1,4 +1,6 @@
-﻿namespace ConsoleRenderer.Examples
+﻿using System;
+
+namespace ConsoleRenderer.Examples
 {
     internal class Program
     {

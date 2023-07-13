@@ -1,5 +1,8 @@
 ﻿using ConsoleRenderer.Examples.Base;
 using ConsoleRenderer.Examples.Programs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ConsoleRenderer.Examples
 {
