@@ -52,6 +52,10 @@ Finally, version `0.3.0` added interlaced rendering mode, which can be used to s
 
 In summary, while it has some limitations, it can be made to run anywhere in the range of acceptable to blisteringly fast.
 
+## Supplemental
+
+After having done some experiments with the [bflat compiler](https://github.com/bflattened/bflat) in conjunction with [bflata](https://github.com/xiaoyuvax/bflata), it seems that native builds produced using these tools perform about 20%-30% better than binaries produced with the ordinary .NET build tooling.
+
 # Contributing
 If there are changes you'd like to see, feel free to create an issue or a PR.
 
