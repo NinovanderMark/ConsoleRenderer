@@ -91,18 +91,9 @@ namespace ConsoleRenderer
         {
             for (int y = 0; y < Height; y++)
                 for (int x = 0; x < Width; x++)
-                    Set(x, y, character, foreground, background);
+                    Pixel(x, y, character, foreground, background);
 
             return this;
-        }
-
-        /// <summary>
-        /// Creates a border on the edges of the canvas with the default fore- and background colors
-        /// </summary>
-        /// <param name="character">Character to draw the border with</param>
-        public ConsoleCanvas CreateBorder(char character = _defaultCharacter)
-        {
-            return CreateBorder(character, DefaultForegroundColor, DefaultBackgroundColor);
         }
 
         /// <summary>
@@ -111,9 +102,9 @@ namespace ConsoleRenderer
         /// <param name="character">Character to draw the border with</param>
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
-        public ConsoleCanvas CreateBorder(char character, ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas Border(char character = _defaultCharacter, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
-            return CreateBorder(0, 0, Width, Height, character, foreground, background);
+            return Border(0, 0, Width, Height, character, foreground, background);
         }
 
         /// <summary>
@@ -127,14 +118,14 @@ namespace ConsoleRenderer
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
         /// <returns></returns>
-        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas Border(int startX, int startY, int width, int height, char character = _defaultCharacter, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
             for (int y = startY; y < startY + height; y++)
             {
                 for (int x = startX; x < startX + width; x++)
                 {
                     if (y == startY || y + 1 == startY + height || x == startX || x + 1 == startX + width)
-                        Set(x, y, character, foreground, background);
+                        Pixel(x, y, character, foreground, background);
                 }
             }
 
@@ -149,27 +140,14 @@ namespace ConsoleRenderer
         /// <param name="width">Width of the rectangle</param>
         /// <param name="height">Height of the rectangle</param>
         /// <param name="character">Character to fill the rectangle with</param>
-        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character = _defaultCharacter)
-        {
-            return CreateRectangle(startX, startY, width, height, character, DefaultForegroundColor, DefaultBackgroundColor);
-        }
-
-        /// <summary>
-        /// Creates a rectangle on the canvas 
-        /// </summary>
-        /// <param name="startX">Left edge of the rectangle</param>
-        /// <param name="startY">Top edge of the rectangle</param>
-        /// <param name="width">Width of the rectangle</param>
-        /// <param name="height">Height of the rectangle</param>
-        /// <param name="character">Character to fill the rectangle with</param>
-        /// <param name="foreground">Color to draw the character with</param>
-        /// <param name="background">Color to draw the background with</param>
-        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
+        /// <param name="foreground">Color to draw the character with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
+        /// <param name="background">Color to draw the background with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
+        public ConsoleCanvas Rectangle(int startX, int startY, int width, int height, char character = _defaultCharacter, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
             for (int y = startY; y < Height && y-startY < height; y++)
             {
                 for (int x = startX; x < Width && x - startX < width; x++)
-                    Set(x, y, character, foreground, background);
+                    Pixel(x, y, character, foreground, background);
             }
 
             return this;
@@ -258,38 +236,15 @@ namespace ConsoleRenderer
         }
 
         /// <summary>
-        /// Set a particular pixel on the canvas to the specified character with the default fore- and background colors
+        /// Set a particular pixel on the canvas to the default character with a given background and foreground color
         /// </summary>
         /// <param name="x">X Coordinate of the pixel</param>
         /// <param name="y">Y Coordinate of the pixel</param>
-        /// <param name="character">Character to set the pixel to</param>
-        public ConsoleCanvas Set(int x, int y, char character = _defaultCharacter)
+        /// <param name="foreground">Foreground color to draw the character with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
+        /// <param name="background">Background color to draw the character with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
+        public ConsoleCanvas Pixel(int x, int y, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
-            return Set(x, y, character, DefaultForegroundColor);
-        }
-
-        /// <summary>
-        /// Set a particular pixel on the canvas to the specified foreground color, with the default background color
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="color"></param>
-        /// <returns></returns>
-        public ConsoleCanvas Set(int x, int y, ConsoleColor color)
-        {
-            return Set(x, y, _defaultCharacter, color);
-        }
-
-        /// <summary>
-        /// Set a particular pixel on the canvas to the specified character with a given color and the default background color
-        /// </summary>
-        /// <param name="x">X Coordinate of the pixel</param>
-        /// <param name="y">Y Coordinate of the pixel</param>
-        /// <param name="character">Character to set the pixel to</param>
-        /// <param name="color">Color to draw the character with</param>
-        public ConsoleCanvas Set(int x, int y, char character, ConsoleColor color)
-        {
-            return Set(x, y, character, color, DefaultBackgroundColor);
+            return Pixel(x, y, _defaultCharacter, foreground, background);
         }
 
         /// <summary>
@@ -298,28 +253,52 @@ namespace ConsoleRenderer
         /// <param name="x">X Coordinate of the pixel</param>
         /// <param name="y">Y Coordinate of the pixel</param>
         /// <param name="character">Character to set the pixel to</param>
-        /// <param name="foreground">Foreground color to draw the character with</param>
-        /// <param name="background">Background color to draw the character with</param>
-        public ConsoleCanvas Set(int x, int y, char character, ConsoleColor foreground, ConsoleColor background)
+        /// <param name="foreground">Foreground color to draw the character with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
+        /// <param name="background">Background color to draw the character with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
+        public ConsoleCanvas Pixel(int x, int y, char character = _defaultCharacter, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
-            return Set(x, y, new Pixel
+            return Pixel(x, y, new Pixel
             {
                 Character = character,
-                Foreground = foreground,
-                Background = background,
+                Foreground = foreground ?? DefaultForegroundColor,
+                Background = background ?? DefaultBackgroundColor,
             });
         }
 
         /// <summary>
-        /// Set a particular pixel on the canvas to the specified <see cref="Pixel"/>
+        /// Set a particular pixel on the canvas to the specified <see cref="ConsoleRenderer.Pixel"/>
         /// </summary>
         /// <param name="x">X Coordinate of the pixel</param>
         /// <param name="y">Y Coordinate of the pixel</param>
         /// <param name="pixel">Pixel to set at the specified coordinates</param>
-        public ConsoleCanvas Set(int x, int y, Pixel pixel)
+        public ConsoleCanvas Pixel(int x, int y, Pixel pixel)
         {
             if (x >= 0 && x < Width && y >= 0 && y < Height)
                 _pixels[y][x] = pixel;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Draws the given text to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
+        /// </summary>
+        /// <param name="x">X Coordinate of the first character of the string</param>
+        /// <param name="y">Y Coordinate of the string</param>
+        /// <param name="text"></param>
+        /// <param name="foreground">Foreground color to draw the string with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
+        /// <param name="background">Background color to draw the string with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
+        public ConsoleCanvas Text(int x, int y, string text, ConsoleColor? foreground = null, ConsoleColor? background = null)
+        {
+
+            for (int t = 0; t < text.Length && t < Width; t++)
+            {
+                _pixels[y][x + t] = new Pixel 
+                { 
+                    Character = text[t], 
+                    Background = foreground ?? DefaultBackgroundColor, 
+                    Foreground = background ?? DefaultForegroundColor 
+                };
+            }
 
             return this;
         }

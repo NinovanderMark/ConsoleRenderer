@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ConsoleRenderer.Examples.Programs
 {
-    internal class Pong : BaseExampleProgram
+    internal class BouncingText : BaseExampleProgram
     {
         private readonly double _framerate;
 
@@ -15,10 +15,11 @@ namespace ConsoleRenderer.Examples.Programs
         private int _y;
         private int _xVel;
         private int _yVel;
+        private string text = "Hello Console";
 
         DateTime _previousFrame;
 
-        public Pong(int framesPerSecond)
+        public BouncingText(int framesPerSecond)
         {
             _xVel = 1;
             _yVel = 1;
@@ -37,7 +38,7 @@ namespace ConsoleRenderer.Examples.Programs
             {
                 _x += _xVel;
                 _y += _yVel;
-                if (_x < 1 || _x + 1 >= Canvas.Width)
+                if (_x < 1 || _x+text.Length + 1 >= Canvas.Width)
                 {
                     _xVel = 0 - _xVel;
                     _x += _xVel * 2;
@@ -52,7 +53,7 @@ namespace ConsoleRenderer.Examples.Programs
                 _previousFrame = currentTime;
             }
 
-            Canvas.Pixel(_x, _y, ConsoleColor.Blue);
+            Canvas.Text(_x, _y, text);
             Canvas.Render();
         }
     }

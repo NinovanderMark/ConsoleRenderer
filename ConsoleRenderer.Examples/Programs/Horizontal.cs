@@ -15,10 +15,10 @@ namespace ConsoleRenderer.Examples.Programs
         {
             Canvas
                 .Clear()
-                .CreateRectangle(0, _y, Canvas.Width, 7, ' ', ConsoleColor.White, ConsoleColor.Black)
-                .CreateRectangle(0, _y + 1, Canvas.Width, 5, ' ', ConsoleColor.White, ConsoleColor.DarkGray)
-                .CreateRectangle(0, _y + 2, Canvas.Width, 3, ' ', ConsoleColor.White, ConsoleColor.Gray)
-                .CreateRectangle(0, _y + 3, Canvas.Width, 1, ' ', ConsoleColor.White, ConsoleColor.White)
+                .Rectangle(0, _y, Canvas.Width, 7, ' ', ConsoleColor.White, ConsoleColor.Black)
+                .Rectangle(0, _y + 1, Canvas.Width, 5, ' ', ConsoleColor.White, ConsoleColor.DarkGray)
+                .Rectangle(0, _y + 2, Canvas.Width, 3, ' ', ConsoleColor.White, ConsoleColor.Gray)
+                .Rectangle(0, _y + 3, Canvas.Width, 1, ' ', ConsoleColor.White, ConsoleColor.White)
                 .Render();
 
             _y++;

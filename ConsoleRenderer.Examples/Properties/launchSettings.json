@@ -23,6 +23,10 @@
     "White Noise": {
       "commandName": "Project",
       "commandLineArgs": "whitenoise"
+    },
+    "Bouncing Text": {
+      "commandName": "Project",
+      "commandLineArgs": "bouncingtext"
     }
   }
 }

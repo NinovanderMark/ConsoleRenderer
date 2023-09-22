@@ -19,7 +19,7 @@ namespace ConsoleRenderer.Examples.Programs
             ConsoleColor foreground = (ConsoleColor) Random.Shared.Next(0, 16);
             ConsoleColor background = (ConsoleColor) Random.Shared.Next(0, 16);
 
-            Canvas.CreateRectangle(left, top, width, height, ' ', foreground, background);
+            Canvas.Rectangle(left, top, width, height, ' ', foreground, background);
             Canvas.Render();
         }
     }

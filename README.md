@@ -23,7 +23,7 @@ To render pixels to the screen, the `Set()` operation can be used to change the 
 ```csharp
 var canvas = new ConsoleCanvas();
 for (int t = 0; t*2 < canvas.Width && t < canvas.Height; t++)
-	canvas.Set(t*2, t);
+	canvas.Pixel(t*2, t);
 
 canvas.Render();
 ```

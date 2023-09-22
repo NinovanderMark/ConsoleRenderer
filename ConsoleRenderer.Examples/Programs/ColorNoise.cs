@@ -16,7 +16,7 @@ namespace ConsoleRenderer.Examples.Programs
                 for (int x = 0; x < Canvas.Width; x++)
                 {
                     ConsoleColor color = (ConsoleColor)Random.Shared.Next(16);
-                    Canvas.Set(x, y, ' ', color, color);
+                    Canvas.Pixel(x, y, ' ', color, color);
                 }
             }
 

@@ -16,7 +16,7 @@ namespace ConsoleRenderer.Examples.Programs
                 for (int x = 0; x < Canvas.Width; x++)
                 {
                     ConsoleColor color = Random.Shared.NextSingle() < 0.5 ? ConsoleColor.White : ConsoleColor.Black;
-                    Canvas.Set(x, y, ' ', color, color);
+                    Canvas.Pixel(x, y, ' ', color, color);
                 }
             }
 
