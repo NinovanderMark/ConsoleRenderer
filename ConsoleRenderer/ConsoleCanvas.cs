@@ -324,6 +324,29 @@ namespace ConsoleRenderer
             return this;
         }
 
+        /// <summary>
+        /// Draws the given text to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
+        /// </summary>
+        /// <param name="x">X Coordinate of the first character of the string</param>
+        /// <param name="y">Y Coordinate of the string</param>
+        /// <param name="text"></param>
+        /// <param name="foreground">Foreground color to draw the string with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
+        /// <param name="background">Background color to draw the string with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
+        public ConsoleCanvas Text(int x, int y, string text, ConsoleColor? foreground = null, ConsoleColor? background = null)
+        {
+            for (int t = 0; t < text.Length && t < Width; t++)
+            {
+                Set(x+t, y, new Pixel
+                {
+                    Character = text[t],
+                    Background = foreground ?? DefaultBackgroundColor,
+                    Foreground = background ?? DefaultForegroundColor
+                });
+            }
+
+            return this;
+        }
+
         private void ClearPixelCache()
         {
             var defaultPixel = new Pixel
