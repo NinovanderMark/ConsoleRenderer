@@ -15,7 +15,8 @@ namespace ConsoleRenderer.Examples
             { "whitenoise", new WhiteNoise() },
             { "colornoise", new ColorNoise() },
             { "horizontal", new Horizontal() },
-            { "vertical", new Vertical() }
+            { "vertical", new Vertical() },
+            { "bouncingtext", new BouncingText(60) }
         };
 
         internal BaseExampleProgram? GetExampleProgram(string[] args)

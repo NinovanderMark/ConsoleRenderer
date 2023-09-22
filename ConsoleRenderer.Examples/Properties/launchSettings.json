@@ -1,5 +1,9 @@
 {
   "profiles": {
+    "Bouncing Text": {
+      "commandName": "Project",
+      "commandLineArgs": "bouncingtext"
+    },
     "Color Noise": {
       "commandName": "Project",
       "commandLineArgs": "colornoise"
