@@ -34,7 +34,7 @@ namespace ConsoleRenderer.Examples.Programs
             {
                 _x += _xVel;
                 _y += _yVel;
-                if (_x < 1 || _x + _text.Length + 1 >= Canvas.Width)
+                if (_x < 1 || _x + 4 >= Canvas.Width)
                 {
                     _xVel = 0 - _xVel;
                     _x += _xVel * 2;
@@ -49,7 +49,7 @@ namespace ConsoleRenderer.Examples.Programs
                 _previousFrame = currentTime;
             }
 
-            Canvas.Text(_x, _y, _text);
+            Canvas.Text(_x, _y, _text, true);
             Canvas.Render();
         }
     }
