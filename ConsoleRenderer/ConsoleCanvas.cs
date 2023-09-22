@@ -325,7 +325,7 @@ namespace ConsoleRenderer
         }
 
         /// <summary>
-        /// Draws the given text to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
+        /// Draws the given <paramref name="text"/> to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
         /// </summary>
         /// <param name="x">X Coordinate of the first character of the string</param>
         /// <param name="y">Y Coordinate of the string</param>
