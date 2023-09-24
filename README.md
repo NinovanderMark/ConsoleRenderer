@@ -29,9 +29,10 @@ canvas.Render();
 ```
 
 ## Other examples
-Please review the example implementations in the Examples project for additional code samples and interesting visual demo's.
+Please review the example implementations in the Examples project for additional code samples and interesting visual demos.
 
 The Examples project can also be run with one of the following arguments to run each example program.
+- BouncingText
 - Pong
 - Rectangles
 - ColorNoise
