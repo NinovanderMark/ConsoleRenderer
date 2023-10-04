@@ -348,8 +348,8 @@ namespace ConsoleRenderer
                 Set(startX + t, y, new Pixel
                 {
                     Character = text[t],
-                    Background = foreground ?? DefaultBackgroundColor,
-                    Foreground = background ?? DefaultForegroundColor
+                    Foreground = foreground ?? DefaultForegroundColor,
+                    Background = background ?? DefaultBackgroundColor
                 });
             }
 

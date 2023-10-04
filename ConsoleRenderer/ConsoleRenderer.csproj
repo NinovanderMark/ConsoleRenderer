@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <Version>0.4.1</Version>
+	  <Version>0.4.2</Version>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <Title>ConsoleRenderer</Title>
 	  <Authors>NinovdMark</Authors>
@@ -16,7 +16,7 @@
 	  <RepositoryType>git</RepositoryType>
 	  <PackageTags>console,terminal,rendering,graphics,retro,simple,library,wrapper,cross-platform,windows,linux</PackageTags>
 	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReleaseNotes>Removed reference to System.Linq, potentially reducing binary sizes for applications built with ConsoleRenderer</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixed a bug where Foreground and Background parameters of the Text method were swapped</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
