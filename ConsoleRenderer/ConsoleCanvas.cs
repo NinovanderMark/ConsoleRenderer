@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ConsoleRenderer
 {
@@ -54,16 +53,22 @@ namespace ConsoleRenderer
             for (int y = 0; y < Height; y++)
             {
                 var row = new List<Pixel>();
+                var previousRow = new List<Pixel>();
                 for (int x = 0; x < Width; x++)
-                    row.Add(new Pixel
+                {
+                    var pixel = new Pixel
                     {
                         Character = _emptyCharacter,
                         Foreground = DefaultForegroundColor,
                         Background = DefaultBackgroundColor
-                    });
+                    };
+
+                    row.Add(pixel);
+                    previousRow.Add(pixel);
+                }
 
                 _pixels.Add(row);
-                _previous.Add(row.ToList());
+                _previous.Add(previousRow);
             }
         }
 
