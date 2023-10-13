@@ -18,7 +18,7 @@ namespace ConsoleRenderer.Examples
             // Get the program we want to run
             var program = new ExampleSelector().GetExampleProgram(args);
             if (program == null)
-                return 0;
+                return 1;
 
             while (true)
             {
