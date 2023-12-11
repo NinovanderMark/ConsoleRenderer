@@ -254,6 +254,16 @@ namespace ConsoleRenderer
                     cursorLeft++;
 
                     _previous[y][x] = _pixels[y][x];
+
+                    // After writing the last character on the bottom right, reposition the cursor to prevent
+                    // an unintended newline, which may shift the screen downwards, causing jitter
+                    if ( cursorLeft == windowWidth && cursorTop == windowHeight - 1)
+                    {
+                        Console.CursorLeft = 0;
+                        Console.CursorTop = 0;
+                        cursorLeft = 0;
+                        cursorTop = 0;
+                    }
                 }
             }
 
