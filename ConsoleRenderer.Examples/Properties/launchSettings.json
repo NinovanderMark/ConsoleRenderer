@@ -14,7 +14,7 @@
     },
     "Pong": {
       "commandName": "Project",
-      "commandLineArgs": ""
+      "commandLineArgs": "pong"
     },
     "Rectangle": {
       "commandName": "Project",

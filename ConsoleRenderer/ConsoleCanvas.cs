@@ -105,7 +105,7 @@ namespace ConsoleRenderer
         /// Creates a border on the edges of the canvas with the default fore- and background colors
         /// </summary>
         /// <param name="character">Character to draw the border with</param>
-        public ConsoleCanvas CreateBorder(char character = _defaultCharacter)
+        public ConsoleCanvas CreateBorder(char? character = null)
         {
             return CreateBorder(character, DefaultForegroundColor, DefaultBackgroundColor);
         }
@@ -113,12 +113,25 @@ namespace ConsoleRenderer
         /// <summary>
         /// Creates a border on the edges of the canvas with the specified character and colors
         /// </summary>
-        /// <param name="character">Character to draw the border with</param>
+        /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
-        public ConsoleCanvas CreateBorder(char character, ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas CreateBorder(char? character, ConsoleColor foreground, ConsoleColor background)
         {
             return CreateBorder(0, 0, Width, Height, character, foreground, background);
+        }
+
+        /// <summary>
+        /// Creates a border on the edges of the canvas with the specified character and the default fore- and background colors
+        /// </summary>
+        /// <param name="startX">Left edge of the rectangle</param>
+        /// <param name="startY">Top edge of the rectangle</param>
+        /// <param name="width">Width of the rectangle</param>
+        /// <param name="height">Height of the rectangle</param>
+        /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
+        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character = null)
+        {
+            return CreateBorder(startX, startY, width, height, character, DefaultForegroundColor, DefaultBackgroundColor);
         }
 
         /// <summary>
@@ -128,18 +141,59 @@ namespace ConsoleRenderer
         /// <param name="startY">Top edge of the rectangle</param>
         /// <param name="width">Width of the rectangle</param>
         /// <param name="height">Height of the rectangle</param>
-        /// <param name="character">Character to draw the border with</param>
+        /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
         /// <returns></returns>
-        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, ConsoleColor foreground, ConsoleColor background)
         {
             for (int y = startY; y < startY + height; y++)
             {
                 for (int x = startX; x < startX + width; x++)
                 {
-                    if (y == startY || y + 1 == startY + height || x == startX || x + 1 == startX + width)
-                        Set(x, y, character, foreground, background);
+                    if ( y != startY && y + 1 != startY + height && x != startX && x + 1 != startX + width)
+                    {
+                        continue;
+                    }
+
+                    char fallback = ' ';
+                    if ( y == startY )
+                    {
+                        if ( x == startX )
+                        {
+                            fallback = '╔';
+                        }
+                        else if ( x + 1 == startX + width)
+                        {
+                            fallback = '╗';
+                        }
+                        else
+                        {
+                            fallback = '═';
+                        }
+                        
+                    }
+                    else if (y + 1 == startY + height)
+                    {
+                        if (x == startX)
+                        {
+                            fallback = '╚';
+                        }
+                        else if (x + 1 == startX + width)
+                        {
+                            fallback = '╝';
+                        }
+                        else
+                        {
+                            fallback = '═';
+                        }
+                    }
+                    else if (x == startX || x + 1 == startX + width)
+                    {
+                        fallback = '║';
+                    }
+
+                    Set(x, y, character ?? fallback, foreground, background);
                 }
             }
 
