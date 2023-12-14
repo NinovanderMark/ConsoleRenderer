@@ -37,16 +37,27 @@ namespace ConsoleRenderer.Examples.Programs
             {
                 _x += _xVel;
                 _y += _yVel;
-                if (_x < 1 || _x + 1 >= Canvas.Width)
+
+                if (_x < 1)
                 {
-                    _xVel = 0 - _xVel;
-                    _x += _xVel * 2;
+                    _x = 1;
+                    _xVel = 1;
+                }
+                else if (_x + 1 >= Canvas.Width)
+                {
+                    _x = Canvas.Width - 2;
+                    _xVel = -1;
                 }
 
-                if (_y < 1 || _y + 1 >= Canvas.Height)
+                if (_y < 1)
                 {
-                    _yVel = 0 - _yVel;
-                    _y += _yVel * 2;
+                    _y = 1;
+                    _yVel = 1;
+                }
+                else if (_y + 1 >= Canvas.Height)
+                {
+                    _y = Canvas.Height - 2;
+                    _yVel = -1;
                 }
 
                 _previousFrame = currentTime;

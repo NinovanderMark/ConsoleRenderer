@@ -26,6 +26,11 @@ namespace ConsoleRenderer
         public ConsoleColor DefaultBackgroundColor { get; set; }
 
         /// <summary>
+        /// Whether the <see cref="ConsoleCanvas"/> dimensions should automatically update to match the terminal's dimensions
+        /// </summary>
+        public bool AutoResize { get; set; }
+
+        /// <summary>
         /// Interlaced mode alternates between rendering only odd or even rows to the screen each time <see cref="Render"/> is called
         /// </summary>
         public bool Interlaced { get; set; }
@@ -44,32 +49,14 @@ namespace ConsoleRenderer
             Width = width;
             Height = height;
             Interlaced = interlaced;
-            _pixels = new List<List<Pixel>>();
-            _previous = new List<List<Pixel>>();
 
             DefaultForegroundColor = Console.ForegroundColor;
             DefaultBackgroundColor = Console.BackgroundColor;
 
-            for (int y = 0; y < Height; y++)
-            {
-                var row = new List<Pixel>();
-                var previousRow = new List<Pixel>();
-                for (int x = 0; x < Width; x++)
-                {
-                    var pixel = new Pixel
-                    {
-                        Character = _emptyCharacter,
-                        Foreground = DefaultForegroundColor,
-                        Background = DefaultBackgroundColor
-                    };
+            _pixels = new List<List<Pixel>>();
+            _previous = new List<List<Pixel>>();
 
-                    row.Add(pixel);
-                    previousRow.Add(pixel);
-                }
-
-                _pixels.Add(row);
-                _previous.Add(previousRow);
-            }
+            Resize(width, height);
         }
 
         public ConsoleCanvas(bool interlaced = false) : this(Console.WindowWidth, Console.WindowHeight, interlaced)
@@ -252,6 +239,11 @@ namespace ConsoleRenderer
 
             if (_previousWidth != windowWidth || _previousHeight != windowHeight)
             {
+                if ( AutoResize )
+                {
+                    Resize(windowWidth, windowHeight);
+                }
+
                 ClearPixelCache();
 
                 _previousWidth = windowWidth;
@@ -280,14 +272,30 @@ namespace ConsoleRenderer
 
                     if (cursorLeft != x)
                     {
-                        Console.CursorLeft = x;
+                        try
+                        {
+                            Console.CursorLeft = x;
+                        }
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            return Render();
+                        }
+
                         cursorLeft = x;
                         leftOperations++;
                     }
 
                     if (cursorTop != y)
                     {
-                        Console.CursorTop = y;
+                        try
+                        {
+                            Console.CursorTop = y;
+                        }
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            return Render();
+                        }
+
                         cursorTop = y;
                     }
 
@@ -323,6 +331,43 @@ namespace ConsoleRenderer
 
             // Swap whether we render odd or even rows next frame
             _oddRows = !_oddRows;
+            return this;
+        }
+
+        /// <summary>
+        /// Resizes the canvas to match the new dimensions
+        /// </summary>
+        /// <param name="width">The new <see cref="Width"/> of the <see cref="ConsoleCanvas"/></param>
+        /// <param name="height">The new <see cref="Height"/> of the <see cref="ConsoleCanvas"/></param>
+        /// <returns></returns>
+        public ConsoleCanvas Resize(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            _pixels = new List<List<Pixel>>();
+            _previous = new List<List<Pixel>>();
+
+            for (int y = 0; y < Height; y++)
+            {
+                var row = new List<Pixel>();
+                var previousRow = new List<Pixel>();
+                for (int x = 0; x < Width; x++)
+                {
+                    var pixel = new Pixel
+                    {
+                        Character = _emptyCharacter,
+                        Foreground = DefaultForegroundColor,
+                        Background = DefaultBackgroundColor
+                    };
+
+                    row.Add(pixel);
+                    previousRow.Add(pixel);
+                }
+
+                _pixels.Add(row);
+                _previous.Add(previousRow);
+            }
+
             return this;
         }
 

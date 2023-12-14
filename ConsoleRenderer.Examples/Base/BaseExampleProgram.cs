@@ -11,6 +11,7 @@
         protected BaseExampleProgram(ConsoleCanvas canvas)
         {
             Canvas = canvas;
+            Canvas.AutoResize = true;
         }
 
         public abstract void Tick();
