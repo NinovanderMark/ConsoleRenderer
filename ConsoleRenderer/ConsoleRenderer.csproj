@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <Version>0.6.0</Version>
+	  <Version>0.6.1</Version>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <Title>ConsoleRenderer</Title>
 	  <Authors>NinovdMark</Authors>
@@ -16,7 +16,7 @@
 	  <RepositoryType>git</RepositoryType>
 	  <PackageTags>console,terminal,rendering,graphics,retro,simple,library,wrapper,cross-platform,windows,linux</PackageTags>
 	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReleaseNotes>Added AutoResize flag which automatically resizes the ConsoleCanvas to match the terminal's dimensions</PackageReleaseNotes>
+    <PackageReleaseNotes>Added AutoResize flag as optional parameter to the constructor of ConsoleCanvas</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

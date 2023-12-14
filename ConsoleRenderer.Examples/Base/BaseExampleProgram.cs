@@ -4,14 +4,13 @@
     {
         protected ConsoleCanvas Canvas { get; set; }
 
-        protected BaseExampleProgram() : this(new ConsoleCanvas())
+        protected BaseExampleProgram() : this(new ConsoleCanvas(autoResize: true))
         {
         }
 
         protected BaseExampleProgram(ConsoleCanvas canvas)
         {
             Canvas = canvas;
-            Canvas.AutoResize = true;
         }
 
         public abstract void Tick();

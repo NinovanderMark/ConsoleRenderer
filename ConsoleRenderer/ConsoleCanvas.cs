@@ -44,11 +44,12 @@ namespace ConsoleRenderer
         private List<List<Pixel>> _pixels;
         private List<List<Pixel>> _previous;
 
-        public ConsoleCanvas(int width, int height, bool interlaced = false)
+        public ConsoleCanvas(int width, int height, bool interlaced = false, bool autoResize = false)
         {
             Width = width;
             Height = height;
             Interlaced = interlaced;
+            AutoResize = autoResize;
 
             DefaultForegroundColor = Console.ForegroundColor;
             DefaultBackgroundColor = Console.BackgroundColor;
@@ -59,7 +60,8 @@ namespace ConsoleRenderer
             Resize(width, height);
         }
 
-        public ConsoleCanvas(bool interlaced = false) : this(Console.WindowWidth, Console.WindowHeight, interlaced)
+        public ConsoleCanvas(bool interlaced = false, bool autoResize = false) 
+            : this(Console.WindowWidth, Console.WindowHeight, interlaced, autoResize)
         {
         }
 
