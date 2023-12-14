@@ -40,6 +40,10 @@ The Examples project can also be run with one of the following arguments to run 
 - Horizontal
 - Vertical
 
+### Other projects made with ConsoleRenderer
+![afbeelding](https://github.com/NinovanderMark/ConsoleRenderer/assets/6692167/1a9f4344-cfb9-4214-b75a-4f3a41c242df)
+Unreleased mining game, by Nino van der Mark
+
 # What's the performance like?
 As a general disclaimer, I don't have access to a standalone Linux machine and benchmarks have thus far been done through WSL. If anyone wants to do some more rigorous testing, please be my guest!
 
