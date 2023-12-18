@@ -36,6 +36,7 @@ The Examples project can also be run with one of the following arguments to run 
 - Pong
 - Rectangles
 - ColorNoise
+- ColorMixing
 - WhiteNoise
 - Horizontal
 - Vertical

@@ -14,6 +14,7 @@ namespace ConsoleRenderer.Examples
             { "rectangles", new Rectangles() },
             { "whitenoise", new WhiteNoise() },
             { "colornoise", new ColorNoise() },
+            { "colormixing", new ColorMixing() },
             { "horizontal", new Horizontal() },
             { "vertical", new Vertical() },
             { "bouncingtext", new BouncingText(60) }

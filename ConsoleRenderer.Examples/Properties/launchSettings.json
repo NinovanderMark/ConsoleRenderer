@@ -8,6 +8,10 @@
       "commandName": "Project",
       "commandLineArgs": "colornoise"
     },
+    "Color Mixing": {
+      "commandName": "Project",
+      "commandLineArgs": "colormixing"
+    },
     "Horizontal": {
       "commandName": "Project",
       "commandLineArgs": "horizontal"
