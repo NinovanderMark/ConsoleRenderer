@@ -42,7 +42,7 @@ The Examples project can also be run with one of the following arguments to run 
 - Vertical
 
 ### Other projects made with ConsoleRenderer
-![afbeelding](https://github.com/NinovanderMark/ConsoleRenderer/assets/6692167/1a9f4344-cfb9-4214-b75a-4f3a41c242df)
+![afbeelding](https://i.imgur.com/mKvsIWW.png)
 Unreleased mining game, by Nino van der Mark
 
 # What's the performance like?
