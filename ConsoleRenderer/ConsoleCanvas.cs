@@ -441,6 +441,40 @@ namespace ConsoleRenderer
         }
 
         /// <summary>
+        /// Draws a series of <see cref="Pixel"/>s to the screen, starting at the specified <paramref name="x"/> and <paramref name="y"/>
+        /// coordinates
+        /// </summary>
+        /// <param name="x">Starting x coordinate of the pixels, each consecutive one will be drawn to the right of the last</param>
+        /// <param name="y">Y Coordinate of the pixels</param>
+        /// <param name="pixels">Pixels to set at the specified coordinates</param>
+        public ConsoleCanvas Set(int x, int y, Pixel[] pixels)
+        {
+            for (int t = 0; t < pixels.Length; t++)
+            {
+                Set(x+t, y, pixels[t]);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Draws a series of <see cref="Pixel"/>s to the screen, starting at the specified <paramref name="x"/> and <paramref name="y"/>
+        /// coordinates
+        /// </summary>
+        /// <param name="x">Starting x coordinate of the pixels, each consecutive one will be drawn to the right of the last</param>
+        /// <param name="y">Y Coordinate of the pixels</param>
+        /// <param name="pixels">Pixels to set at the specified coordinates</param>
+        public ConsoleCanvas Set(int x, int y, List<Pixel> pixels)
+        {
+            for (int t = 0; t < pixels.Count; t++)
+            {
+                Set(x + t, y, pixels[t]);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Draws the given <paramref name="text"/> to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
         /// </summary>
         /// <param name="x">X Coordinate of the first character of the string</param>
@@ -465,6 +499,22 @@ namespace ConsoleRenderer
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Returns the <see cref="Pixel"/> at the given <paramref name="x"/>,<paramref name="y"/> coordinates
+        /// </summary>
+        /// <param name="backBuffer">Whether to return the pixel as it was last drawn (<see cref="true"/>), or the
+        /// one that will be drawn at the next call to <see cref="Render"/></param>
+        /// <exception cref="IndexOutOfRangeException"></exception>
+        public Pixel Get(int x, int y, bool backBuffer = true)
+        {
+            if ( x < 0 || y < 0 || x >= Width || y >= Height)
+            {
+                throw new IndexOutOfRangeException($"The coordinates {x},{y} need to be positive and less than {Width} and {Height}");
+            }
+
+            return backBuffer ? _previous[y][x] : _pixels[y][x];
         }
 
         private void ClearPixelCache()
