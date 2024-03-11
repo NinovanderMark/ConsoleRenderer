@@ -1,5 +1,5 @@
 # What is ConsoleRenderer
-This is a simple and easy-to-use library to help render images in terminal windows that works on Windows, Linux and presumably MacOs. This allows a developer to easily build cross-platform, retro looking graphical applications for the terminal using C# and .NET.
+This is a simple and easy-to-use library to help render images in terminal windows that works on Windows, Linux and MacOs. This allows a developer to easily build cross-platform, retro looking graphical applications for the terminal using C# and .NET.
 
 I learned programming with QBasic on MS-DOS and miss the days where you can get graphics on screen with just a few lines of code, ConsoleRenderer is a bit of an homage to that minimal style of development. Modern graphics libraries tend to have a lot of ceremony to set up a render window and get things on screen, this library aims to be the opposite of that.
 
