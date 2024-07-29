@@ -7,7 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleRenderer", "ConsoleR
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleRenderer.Examples", "ConsoleRenderer.Examples\ConsoleRenderer.Examples.csproj", "{FE2278FF-CF35-4E27-A586-662FA3109D74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleRenderer.Tests", "ConsoleRenderer.Tests\ConsoleRenderer.Tests.csproj", "{01F6FA52-CE03-4D47-9679-32F1064E9DB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleRenderer.Tests", "ConsoleRenderer.Tests\ConsoleRenderer.Tests.csproj", "{01F6FA52-CE03-4D47-9679-32F1064E9DB8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Pipelines", "Pipelines", "{28AC2078-636E-426C-996F-56221A8B983E}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\cd.yml = .github\workflows\cd.yml
+		.github\workflows\ci.yml = .github\workflows\ci.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

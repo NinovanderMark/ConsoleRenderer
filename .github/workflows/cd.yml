@@ -1,0 +1,101 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./src
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs: 
+      app-version: ${{ steps.version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Get application version
+      id: version
+      run: |
+        csproj=`cat ./Miner.Presentation.Terminal/Miner.Presentation.Terminal.csproj`
+        version=$(grep -oPm1 "(?<=<Version>)[^<]+" <<< "$csproj")
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  # Uses the application version to check if a release already exists for it
+  check-release:
+    runs-on: ubuntu-latest
+    needs: build
+    outputs:
+      exists: ${{ steps.check-release.outputs.exists }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Output version
+      env: 
+        APPVERSION: ${{needs.build.outputs.app-version}}
+      run: echo "$APPVERSION"
+    - name: Check if release already exists
+      uses: mukunku/tag-exists-action@v1.6.0
+      id: check-release
+      with: 
+        tag: ${{ format('v{0}', needs.build.outputs.app-version) }}
+
+  # Creates a new release for the new application version
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [ build, check-release ]
+    if: needs.check-release.outputs.exists == 'false'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Tag new release
+      env: 
+        VERSION: ${{needs.build.outputs.app-version}}
+      run: |
+        git config user.email "ninovdmark@gmail.com"
+        git config user.name "GitHub Actions Workflow"
+        git tag v$VERSION
+        git push origin --tags
+    - name: Create new release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        tag: ${{needs.build.outputs.app-version}}
+      run: |
+        gh release create "v$tag" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="${GITHUB_REPOSITORY#*/} v${tag#v}" \
+            --generate-notes
+  
+  build-attach-package:
+    runs-on: ubuntu-latest
+    needs: [ build, create-release ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Publish package
+      run: dotnet pack
+    - name: Upload release artifacts
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{needs.build.outputs.app-version}}
+      run: |
+        gh release upload v"$VERSION" \
+            ConsoleRenderer/bin/Release/ConsoleRenderer.$VERSION.nupkg
