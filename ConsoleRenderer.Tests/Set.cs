@@ -7,11 +7,11 @@ namespace ConsoleRenderer.Tests
         [Fact]
         public void Happy_XY()
         {
+            // Assemble
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0);
-            canvas.Render();
 
-            var pixel = canvas.Get(0, 0);
+            var pixel = canvas.Get(0, 0, false);
             Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal('*', pixel.Character);
@@ -24,9 +24,8 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, character);
-            canvas.Render();
 
-            var pixel = canvas.Get(0, 0);
+            var pixel = canvas.Get(0, 0, false);
             Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal(character, pixel.Character);
@@ -39,9 +38,8 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, color);
-            canvas.Render();
 
-            var pixel = canvas.Get(0, 0);
+            var pixel = canvas.Get(0, 0, false);
             Assert.Equal(color, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal('*', pixel.Character);
@@ -54,9 +52,8 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, target);
-            canvas.Render();
 
-            Assert.Equal(target, canvas.Get(0, 0));
+            Assert.Equal(target, canvas.Get(0, 0, false));
         }
 
         [Fact]
@@ -70,10 +67,9 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, target);
-            canvas.Render();
 
-            Assert.Equal(target[0], canvas.Get(0, 0));
-            Assert.Equal(target[1], canvas.Get(1, 0));
+            Assert.Equal(target[0], canvas.Get(0, 0, false));
+            Assert.Equal(target[1], canvas.Get(1, 0, false));
         }
 
         [Fact]
@@ -87,10 +83,9 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, target);
-            canvas.Render();
 
-            Assert.Equal(target[0], canvas.Get(0, 0));
-            Assert.Equal(target[1], canvas.Get(1, 0));
+            Assert.Equal(target[0], canvas.Get(0, 0, false));
+            Assert.Equal(target[1], canvas.Get(1, 0, false));
         }
 
         [Fact]
@@ -101,9 +96,8 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, character, color);
-            canvas.Render();
 
-            var pixel = canvas.Get(0, 0);
+            var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
             Assert.Equal(color, pixel.Foreground);
         }
@@ -117,9 +111,8 @@ namespace ConsoleRenderer.Tests
 
             var canvas = new ConsoleCanvas(10, 10);
             canvas.Set(0, 0, character, foreground, background);
-            canvas.Render();
 
-            var pixel = canvas.Get(0, 0);
+            var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
             Assert.Equal(foreground, pixel.Foreground);
             Assert.Equal(background, pixel.Background);
