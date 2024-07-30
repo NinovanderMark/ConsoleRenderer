@@ -81,7 +81,7 @@ jobs:
             --title="${GITHUB_REPOSITORY#*/} v${tag#v}" \
             --generate-notes
   
-  build-attach-package:
+  build-publish-package:
     runs-on: ubuntu-latest
     needs: [ build, create-release ]
     steps:
@@ -99,3 +99,10 @@ jobs:
       run: |
         gh release upload v"$VERSION" \
             ConsoleRenderer/bin/Release/ConsoleRenderer.$VERSION.nupkg
+    - name: Publish package to NuGet.org
+      env:
+        NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        VERSION: ${{needs.build.outputs.app-version}}
+      run: |
+        dotnet nuget push ConsoleRenderer/bin/Release/ConsoleRenderer.$VERSION.nupkg \
+            -k $NUGET_TOKEN -s https://api.nuget.org/v3/index.json
