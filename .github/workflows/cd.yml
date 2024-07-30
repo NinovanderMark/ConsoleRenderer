@@ -32,7 +32,7 @@ jobs:
     - name: Get application version
       id: version
       run: |
-        csproj=`cat ./Miner.Presentation.Terminal/Miner.Presentation.Terminal.csproj`
+        csproj=`cat ./ConsoleRenderer/ConsoleRenderer.csproj`
         version=$(grep -oPm1 "(?<=<Version>)[^<]+" <<< "$csproj")
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
