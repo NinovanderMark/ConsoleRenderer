@@ -5,60 +5,77 @@ namespace ConsoleRenderer.Tests
     public class Set
     {
         [Fact]
-        public void Happy_XY()
+        public void X_Y()
         {
             // Assemble
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0);
 
+            // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal('*', pixel.Character);
         }
 
-        [Fact]
-        public void Happy_XY_Char()
+        [Theory]
+        [InlineData('x')]
+        [InlineData('z')]
+        public void X_Y_Char(char character)
         {
-            const char character = 'x';
-
+            // Assemble
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, character);
 
+            // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal(character, pixel.Character);
         }
 
-        [Fact]
-        public void Happy_XY_Color()
+        [Theory]
+        [InlineData(ConsoleColor.Red)]
+        [InlineData(ConsoleColor.Blue)]
+        public void X_Y_Color(ConsoleColor color)
         {
-            const ConsoleColor color = ConsoleColor.Red;
-
+            // Assemble
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, color);
 
+            // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(color, pixel.Foreground);
             Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
             Assert.Equal('*', pixel.Character);
         }
 
-        [Fact]
-        public void Happy_XY_Pixel()
+        [Theory]
+        [InlineData('x', ConsoleColor.Red, ConsoleColor.Blue)]
+        [InlineData('-', ConsoleColor.Yellow, ConsoleColor.Green)]
+        public void X_Y_Pixel(char character, ConsoleColor foreground, ConsoleColor background)
         {
-            Pixel target = new Pixel { Background = ConsoleColor.Yellow, Foreground = ConsoleColor.Green, Character = 'x' };
-
+            // Assemble
+            Pixel target = new Pixel { Background = background, Foreground = foreground, Character = character };
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, target);
 
+            // Assert
             Assert.Equal(target, canvas.Get(0, 0, false));
         }
 
         [Fact]
-        public void Happy_XY_PixelArray()
+        public void X_Y_PixelArray()
         {
+            // Assemble
             Pixel[] target = new Pixel[]
             { 
                 new() { Background = ConsoleColor.Yellow, Foreground = ConsoleColor.Green, Character = 'x' },
@@ -66,15 +83,19 @@ namespace ConsoleRenderer.Tests
             };
 
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, target);
 
+            // Assert
             Assert.Equal(target[0], canvas.Get(0, 0, false));
             Assert.Equal(target[1], canvas.Get(1, 0, false));
         }
 
         [Fact]
-        public void Happy_XY_PixelList()
+        public void X_Y_PixelList()
         {
+            // Assemble
             List<Pixel> target = new()
             {
                 new() { Background = ConsoleColor.Yellow, Foreground = ConsoleColor.Green, Character = 'x' },
@@ -82,36 +103,44 @@ namespace ConsoleRenderer.Tests
             };
 
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, target);
 
+            // Assert
             Assert.Equal(target[0], canvas.Get(0, 0, false));
             Assert.Equal(target[1], canvas.Get(1, 0, false));
         }
 
-        [Fact]
-        public void Happy_XY_Character_Foreground()
+        [Theory]
+        [InlineData('x', ConsoleColor.Red)]
+        [InlineData('-', ConsoleColor.Yellow)]
+        public void X_Y_Character_Foreground(char character, ConsoleColor color)
         {
-            const char character = 'x';
-            const ConsoleColor color = ConsoleColor.Yellow;
-
+            // Assemble
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, character, color);
 
+            // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
             Assert.Equal(color, pixel.Foreground);
         }
 
-        [Fact]
-        public void Happy_XY_Character_Foreground_Background()
+        [Theory]
+        [InlineData('a', ConsoleColor.Red, ConsoleColor.Blue)]
+        [InlineData('1', ConsoleColor.Yellow, ConsoleColor.Green)]
+        public void X_Y_Character_Foreground_Background(char character, ConsoleColor foreground, ConsoleColor background)
         {
-            const char character = 'x';
-            const ConsoleColor foreground = ConsoleColor.Yellow;
-            const ConsoleColor background = ConsoleColor.Magenta;
-
+            // Assemble
             var canvas = new ConsoleCanvas(10, 10);
+
+            // Act
             canvas.Set(0, 0, character, foreground, background);
 
+            // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
             Assert.Equal(foreground, pixel.Foreground);
