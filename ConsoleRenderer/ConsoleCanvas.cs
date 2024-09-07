@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ConsoleRenderer
 {
-    public class ConsoleCanvas
+    public class ConsoleCanvas : ICanvas
     {
         /// <summary>
         /// Width of the canvas
