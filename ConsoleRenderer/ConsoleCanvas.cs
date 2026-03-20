@@ -45,8 +45,10 @@ namespace ConsoleRenderer
         private int _previousWidth;
         private int _previousHeight;
         private bool _oddRows;
-        private List<List<Pixel>> _pixels;
-        private List<List<Pixel>> _previous;
+        private Pixel[] _pixels;
+        private Pixel[] _previous;
+        
+        /// <summary>Shared across all instances so that every canvas renders to the same console output.</summary>
         private static Stream? _outputStream;
         private ArrayBufferWriter<byte>? _frameBuffer;
         private static bool _ansiInitialized;
@@ -66,8 +68,8 @@ namespace ConsoleRenderer
             if ((int)DefaultForegroundColor == -1) DefaultForegroundColor = ConsoleColor.Gray;
             if ((int)DefaultBackgroundColor == -1) DefaultBackgroundColor = ConsoleColor.Black;
 
-            _pixels = new List<List<Pixel>>();
-            _previous = new List<List<Pixel>>();
+            _pixels = new Pixel[Width * Height];
+            _previous = new Pixel[Width * Height];
 
             Resize(width, height);
         }
@@ -95,9 +97,14 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas Fill(char character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = 0; y < Height; y++)
-                for (int x = 0; x < Width; x++)
-                    Set(x, y, character, foreground, background);
+            var pixel = new Pixel
+            {
+                Character = character,
+                Foreground = foreground,
+                Background = background
+            };
+            for (int i = 0; i < _pixels.Length; i++)
+                _pixels[i] = pixel;
 
             return this;
         }
@@ -148,57 +155,56 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = startY; y < startY + height; y++)
+            int endX = startX + width - 1;
+            int endY = startY + height - 1;
+
+            var pixel = new Pixel
             {
-                for (int x = startX; x < startX + width; x++)
+                Foreground = foreground,
+                Background = background,
+                Character = character ?? _emptyCharacter
+            };
+
+            for (int y = startY; y <= endY && y < Height; y++)
+            {
+                for (int x = startX; x <= endX && x < Width; x++)
                 {
-                    if ( y != startY && y + 1 != startY + height && x != startX && x + 1 != startX + width)
-                    {
+                    bool onTop = y == startY;
+                    bool onBottom = y == endY;
+                    bool onLeft = x == startX;
+                    bool onRight = x == endX;
+                    if (!onTop && !onBottom && !onLeft && !onRight)
                         continue;
-                    }
 
-                    char fallback = ' ';
-                    if ( y == startY )
-                    {
-                        if ( x == startX )
-                        {
-                            fallback = '╔';
-                        }
-                        else if ( x + 1 == startX + width)
-                        {
-                            fallback = '╗';
-                        }
-                        else
-                        {
-                            fallback = '═';
-                        }
-                        
-                    }
-                    else if (y + 1 == startY + height)
-                    {
-                        if (x == startX)
-                        {
-                            fallback = '╚';
-                        }
-                        else if (x + 1 == startX + width)
-                        {
-                            fallback = '╝';
-                        }
-                        else
-                        {
-                            fallback = '═';
-                        }
-                    }
-                    else if (x == startX || x + 1 == startX + width)
-                    {
-                        fallback = '║';
-                    }
-
-                    Set(x, y, character ?? fallback, foreground, background);
+                    pixel.Character = character ?? GetBorderChar(x, y, startX, startY, endX, endY);
+                    _pixels[y * Width + x] = pixel;
                 }
             }
 
             return this;
+        }
+
+        private static char GetBorderChar(int x, int y, int startX, int startY, int endX, int endY)
+        {
+            bool onTop = y == startY;
+            bool onBottom = y == endY;
+            bool onLeft = x == startX;
+            bool onRight = x == endX;
+
+            if (onTop)
+            {
+                if (onLeft) return '╔';
+                if (onRight) return '╗';
+                return '═';
+            }
+            if (onBottom)
+            {
+                if (onLeft) return '╚';
+                if (onRight) return '╝';
+                return '═';
+            }
+            if (onLeft || onRight) return '║';
+            return _emptyCharacter;
         }
 
         /// <summary>
@@ -226,10 +232,22 @@ namespace ConsoleRenderer
         /// <param name="background">Color to draw the background with</param>
         public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = startY; y < Height && y-startY < height; y++)
+            int yMin = Math.Max(0, startY);
+            int yMax = Math.Min(Height, startY + height);
+            int xMin = Math.Max(0, startX);
+            int xMax = Math.Min(Width, startX + width);
+            var pixel = new Pixel
             {
-                for (int x = startX; x < Width && x - startX < width; x++)
-                    Set(x, y, character, foreground, background);
+                Character = character,
+                Foreground = foreground,
+                Background = background
+            };
+
+            for (int y = yMin; y < yMax; y++)
+            {
+                int rowStart = y * Width;
+                for (int x = xMin; x < xMax; x++)
+                    _pixels[rowStart + x] = pixel;
             }
 
             return this;
@@ -273,11 +291,11 @@ namespace ConsoleRenderer
             for (int y = 0; y < effectiveHeight; y++)
             {
                 bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
-                List<Pixel> sourceRow = skipRow ? _previous[y] : _pixels[y];
+                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
 
                 for (int x = 0; x < effectiveWidth; x++)
                 {
-                    Pixel p = sourceRow[x];
+                    Pixel p = source[y * Width + x];
                     int fg = AnsiForeground[(int)p.Foreground];
                     int bg = AnsiBackground[(int)p.Background];
 
@@ -295,18 +313,21 @@ namespace ConsoleRenderer
                 // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
                 if (y < effectiveHeight - 1)
                     buffer.Write("\n"u8);
+                
                 lastFg = -1;
                 lastBg = -1;
 
                 if (!skipRow)
                 {
+                    int rowStart = y * Width;
                     for (int x = 0; x < Width; x++)
-                        _previous[y][x] = sourceRow[x];
+                        _previous[rowStart + x] = source[rowStart + x];
                 }
             }
 
+            // Cursor to top-left (1-based in ANSI)
             buffer.Write("\x1b[1;1H"u8);
-
+            
             _outputStream!.Write(buffer.WrittenSpan);
             _outputStream.Flush();
 
@@ -324,29 +345,18 @@ namespace ConsoleRenderer
         {
             Width = width;
             Height = height;
-            _pixels = new List<List<Pixel>>();
-            _previous = new List<List<Pixel>>();
+            _pixels = new Pixel[Width * Height];
+            _previous = new Pixel[Width * Height];
 
-            for (int y = 0; y < Height; y++)
+            var defaultPixel = new Pixel
             {
-                var row = new List<Pixel>();
-                var previousRow = new List<Pixel>();
-                for (int x = 0; x < Width; x++)
-                {
-                    var pixel = new Pixel
-                    {
-                        Character = _emptyCharacter,
-                        Foreground = DefaultForegroundColor,
-                        Background = DefaultBackgroundColor
-                    };
+                Background = DefaultBackgroundColor,
+                Foreground = DefaultForegroundColor,
+                Character = _emptyCharacter
+            };
 
-                    row.Add(pixel);
-                    previousRow.Add(pixel);
-                }
-
-                _pixels.Add(row);
-                _previous.Add(previousRow);
-            }
+            Array.Fill(_pixels, defaultPixel);
+            Array.Fill(_previous, defaultPixel);
 
             return this;
         }
@@ -413,7 +423,7 @@ namespace ConsoleRenderer
         public ConsoleCanvas Set(int x, int y, Pixel pixel)
         {
             if (x >= 0 && x < Width && y >= 0 && y < Height)
-                _pixels[y][x] = pixel;
+                _pixels[y * Width + x] = pixel;
 
             return this;
         }
@@ -427,10 +437,15 @@ namespace ConsoleRenderer
         /// <param name="pixels">Pixels to set at the specified coordinates</param>
         public ConsoleCanvas Set(int x, int y, Pixel[] pixels)
         {
-            for (int t = 0; t < pixels.Length; t++)
-            {
-                Set(x+t, y, pixels[t]);
-            }
+            if (y < 0 || y >= Height || pixels.Length == 0)
+                return this;
+            int start = Math.Max(0, -x);
+            int count = Math.Min(pixels.Length - start, Width - (x + start));
+            if (count <= 0)
+                return this;
+            int rowStart = y * Width;
+            for (int i = 0; i < count; i++)
+                _pixels[rowStart + x + start + i] = pixels[start + i];
 
             return this;
         }
@@ -444,10 +459,15 @@ namespace ConsoleRenderer
         /// <param name="pixels">Pixels to set at the specified coordinates</param>
         public ConsoleCanvas Set(int x, int y, List<Pixel> pixels)
         {
-            for (int t = 0; t < pixels.Count; t++)
-            {
-                Set(x + t, y, pixels[t]);
-            }
+            if (y < 0 || y >= Height || pixels.Count == 0)
+                return this;
+            int start = Math.Max(0, -x);
+            int count = Math.Min(pixels.Count - start, Width - (x + start));
+            if (count <= 0)
+                return this;
+            int rowStart = y * Width;
+            for (int i = 0; i < count; i++)
+                _pixels[rowStart + x + start + i] = pixels[start + i];
 
             return this;
         }
@@ -464,16 +484,22 @@ namespace ConsoleRenderer
         public ConsoleCanvas Text(int x, int y, string text, bool centered = false, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
             // If the text should be centered, deduct half the text length from the x coordinate
-            int startX = centered ? x - (int) Math.Floor(text.Length/2d) : x;
+            int startX = centered ? x - (int)Math.Floor(text.Length / 2d) : x;
+            var fg = foreground ?? DefaultForegroundColor;
+            var bg = background ?? DefaultBackgroundColor;
 
-            for (int t = 0; t < text.Length && t < Width; t++)
+            if (y < 0 || y >= Height)
+                return this;
+            int rowStart = y * Width;
+            var pixel = new Pixel { Foreground = fg, Background = bg };
+            for (int t = 0; t < text.Length; t++)
             {
-                Set(startX + t, y, new Pixel
+                int px = startX + t;
+                if (px >= 0 && px < Width)
                 {
-                    Character = text[t],
-                    Foreground = foreground ?? DefaultForegroundColor,
-                    Background = background ?? DefaultBackgroundColor
-                });
+                    pixel.Character = text[t];
+                    _pixels[rowStart + px] = pixel;
+                }
             }
 
             return this;
@@ -482,6 +508,8 @@ namespace ConsoleRenderer
         /// <summary>
         /// Returns the <see cref="Pixel"/> at the given <paramref name="x"/>,<paramref name="y"/> coordinates
         /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <param name="backBuffer">Whether to return the pixel as it was last drawn (<see cref="true"/>), or the
         /// one that will be drawn at the next call to <see cref="Render"/></param>
         /// <exception cref="IndexOutOfRangeException"></exception>
@@ -492,7 +520,8 @@ namespace ConsoleRenderer
                 throw new IndexOutOfRangeException($"The coordinates {x},{y} need to be positive and less than {Width} and {Height}");
             }
 
-            return backBuffer ? _previous[y][x] : _pixels[y][x];
+            int index = y * Width + x;
+            return backBuffer ? _previous[index] : _pixels[index];
         }
 
         private void ClearPixelCache()
@@ -501,12 +530,11 @@ namespace ConsoleRenderer
             {
                 Background = DefaultBackgroundColor,
                 Foreground = DefaultForegroundColor,
-                Character = '\u00A0'
+                Character = _emptyCharacter
             };
 
-            for (int y = 0; y < Height; y++)
-                for (int x = 0; x < Width; x++)
-                    _previous[y][x] = defaultPixel;
+            for (int i = 0; i < _previous.Length; i++)
+                _previous[i] = defaultPixel;
         }
 
         private void EnsureStreamInitialized()
@@ -554,11 +582,6 @@ namespace ConsoleRenderer
                 buffer.Write(stackalloc byte[] { (byte)('0' + code) });
             }
             buffer.Write("m"u8);
-        }
-
-        private static void WriteSgrReset(ArrayBufferWriter<byte> buffer)
-        {
-            buffer.Write("\x1b[0m"u8);
         }
 
         private static void WriteUtf8Char(ArrayBufferWriter<byte> buffer, char c)
