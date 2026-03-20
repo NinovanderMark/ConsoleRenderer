@@ -1,5 +1,9 @@
-﻿using System;
+using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ConsoleRenderer
 {
@@ -43,6 +47,9 @@ namespace ConsoleRenderer
         private bool _oddRows;
         private List<List<Pixel>> _pixels;
         private List<List<Pixel>> _previous;
+        private static Stream? _outputStream;
+        private ArrayBufferWriter<byte>? _frameBuffer;
+        private static bool _ansiInitialized;
 
         public ConsoleCanvas(int width, int height, bool interlaced = false, bool autoResize = false)
         {
@@ -53,6 +60,11 @@ namespace ConsoleRenderer
 
             DefaultForegroundColor = Console.ForegroundColor;
             DefaultBackgroundColor = Console.BackgroundColor;
+            
+            // In Linux Console.ForegroundColor is sometimes not defined (-1).
+            // In that case set it manually.
+            if ((int)DefaultForegroundColor == -1) DefaultForegroundColor = ConsoleColor.Gray;
+            if ((int)DefaultBackgroundColor == -1) DefaultBackgroundColor = ConsoleColor.Black;
 
             _pixels = new List<List<Pixel>>();
             _previous = new List<List<Pixel>>();
@@ -228,20 +240,14 @@ namespace ConsoleRenderer
         /// </summary>
         public ConsoleCanvas Render()
         {
-            Console.CursorTop = 0;
-            Console.CursorLeft = 0;
+            EnsureStreamInitialized();
 
-            // Temporary variables to track Console attributes like size, position and color
-            int cursorTop = 0;
-            int cursorLeft = 0;
             int windowWidth = Console.WindowWidth;
             int windowHeight = Console.WindowHeight;
-            ConsoleColor foregroundColor = Console.ForegroundColor;
-            ConsoleColor backgroundColor = Console.BackgroundColor;
 
             if (_previousWidth != windowWidth || _previousHeight != windowHeight)
             {
-                if ( AutoResize )
+                if (AutoResize)
                 {
                     Resize(windowWidth, windowHeight);
                 }
@@ -252,86 +258,58 @@ namespace ConsoleRenderer
                 _previousHeight = windowHeight;
             }
 
-            int leftOperations = 0;
-            int backgroundOperations = 0;
+            int effectiveWidth = Math.Min(Width, windowWidth);
+            int effectiveHeight = Math.Min(Height, windowHeight);
 
-            for (int y = 0; y < Height; y++)
+            ArrayBufferWriter<byte> buffer = _frameBuffer!;
+            buffer.Clear();
+
+            // Cursor to top-left (1-based in ANSI)
+            buffer.Write("\x1b[1;1H"u8);
+
+            int lastFg = -1;
+            int lastBg = -1;
+
+            for (int y = 0; y < effectiveHeight; y++)
             {
-                // See if this is one of the rows we should skip in Interlaced mode
-                if ( Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0)) )
-                    continue;
+                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                List<Pixel> sourceRow = skipRow ? _previous[y] : _pixels[y];
 
-                for (int x = 0; x < Width; x++)
-                {                        
-                    if (_pixels[y][x] == _previous[y][x])
-                        continue;
+                for (int x = 0; x < effectiveWidth; x++)
+                {
+                    Pixel p = sourceRow[x];
+                    int fg = AnsiForeground[(int)p.Foreground];
+                    int bg = AnsiBackground[(int)p.Background];
 
-                    if (x >= windowWidth)
-                        continue;
-
-                    if (y >= windowHeight)
-                        continue;
-
-                    if (cursorLeft != x)
+                    if (fg != lastFg || bg != lastBg)
                     {
-                        try
-                        {
-                            Console.CursorLeft = x;
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            return Render();
-                        }
-
-                        cursorLeft = x;
-                        leftOperations++;
+                        WriteSgr(buffer, fg);
+                        WriteSgr(buffer, bg);
+                        lastFg = fg;
+                        lastBg = bg;
                     }
 
-                    if (cursorTop != y)
-                    {
-                        try
-                        {
-                            Console.CursorTop = y;
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            return Render();
-                        }
+                    WriteUtf8Char(buffer, p.Character);
+                }
 
-                        cursorTop = y;
-                    }
+                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
+                if (y < effectiveHeight - 1)
+                    buffer.Write("\n"u8);
+                lastFg = -1;
+                lastBg = -1;
 
-                    if (_pixels[y][x].Character != ' ' && _pixels[y][x].Foreground != foregroundColor)
-                    {
-                        Console.ForegroundColor = _pixels[y][x].Foreground;
-                        foregroundColor = _pixels[y][x].Foreground;
-                    }
-
-                    if (_pixels[y][x].Background != backgroundColor)
-                    {
-                        Console.BackgroundColor = _pixels[y][x].Background;
-                        backgroundColor = _pixels[y][x].Background;
-                        backgroundOperations++;
-                    }
-
-                    Console.Write(_pixels[y][x].Character);
-                    cursorLeft++;
-
-                    _previous[y][x] = _pixels[y][x];
-
-                    // After writing the last character on the bottom right, reposition the cursor to prevent
-                    // an unintended newline, which may shift the screen downwards, causing jitter
-                    if ( cursorLeft == windowWidth && cursorTop == windowHeight - 1)
-                    {
-                        Console.CursorLeft = 0;
-                        Console.CursorTop = 0;
-                        cursorLeft = 0;
-                        cursorTop = 0;
-                    }
+                if (!skipRow)
+                {
+                    for (int x = 0; x < Width; x++)
+                        _previous[y][x] = sourceRow[x];
                 }
             }
 
-            // Swap whether we render odd or even rows next frame
+            buffer.Write("\x1b[1;1H"u8);
+
+            _outputStream!.Write(buffer.WrittenSpan);
+            _outputStream.Flush();
+
             _oddRows = !_oddRows;
             return this;
         }
@@ -529,6 +507,90 @@ namespace ConsoleRenderer
             for (int y = 0; y < Height; y++)
                 for (int x = 0; x < Width; x++)
                     _previous[y][x] = defaultPixel;
+        }
+
+        private void EnsureStreamInitialized()
+        {
+            if (_outputStream != null && _frameBuffer != null)
+                return;
+
+            lock (typeof(ConsoleCanvas))
+            {
+                if (!_ansiInitialized)
+                {
+                    // Windows needs VT mode for ANSI; Linux and macOS terminals already support it
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        WindowsAnsiHelper.EnableVirtualTerminalProcessing();
+                    Console.OutputEncoding = Encoding.UTF8;
+                    _ansiInitialized = true;
+                }
+
+                if (_outputStream == null)
+                    _outputStream = Console.OpenStandardOutput();
+
+                if (_frameBuffer == null)
+                    _frameBuffer = new ArrayBufferWriter<byte>();
+            }
+        }
+
+        // ANSI SGR codes for ConsoleColor (index = (int)ConsoleColor): 30-37, 90-97 fg; 40-47, 100-107 bg
+        private static readonly int[] AnsiForeground = { 30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97 };
+        private static readonly int[] AnsiBackground = { 40, 44, 42, 46, 41, 45, 43, 47, 100, 104, 102, 106, 101, 105, 103, 107 };
+
+        private static void WriteSgr(ArrayBufferWriter<byte> buffer, int code)
+        {
+            buffer.Write("\x1b["u8);
+            if (code >= 100)
+            {
+                buffer.Write("1"u8);
+                buffer.Write(stackalloc byte[] { (byte)('0' + (code / 10 % 10)), (byte)('0' + (code % 10)) });
+            }
+            else if (code >= 10)
+            {
+                buffer.Write(stackalloc byte[] { (byte)('0' + (code / 10)), (byte)('0' + (code % 10)) });
+            }
+            else
+            {
+                buffer.Write(stackalloc byte[] { (byte)('0' + code) });
+            }
+            buffer.Write("m"u8);
+        }
+
+        private static void WriteSgrReset(ArrayBufferWriter<byte> buffer)
+        {
+            buffer.Write("\x1b[0m"u8);
+        }
+
+        private static void WriteUtf8Char(ArrayBufferWriter<byte> buffer, char c)
+        {
+            Span<char> cSpan = stackalloc char[1] { c };
+            Span<byte> dest = buffer.GetSpan(4);
+            int written = Encoding.UTF8.GetBytes(cSpan, dest);
+            buffer.Advance(written);
+        }
+
+        private static class WindowsAnsiHelper
+        {
+            private const int StdOutputHandle = -11;
+            private const uint VirtualTerminalProcessingFlag = 0x0004;
+
+            public static void EnableVirtualTerminalProcessing()
+            {
+                var handle = GetStdHandle(StdOutputHandle);
+                if (handle != IntPtr.Zero && GetConsoleMode(handle, out uint mode))
+                {
+                    SetConsoleMode(handle, mode | VirtualTerminalProcessingFlag);
+                }
+            }
+
+            [DllImport("kernel32")]
+            private static extern IntPtr GetStdHandle(int nStdHandle);
+
+            [DllImport("kernel32")]
+            private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+            [DllImport("kernel32")]
+            private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
         }
     }
 }
