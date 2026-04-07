@@ -41,6 +41,8 @@ namespace ConsoleRenderer
 
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
+        
+        private WindowsAnsi _windowsAnsi;
 
         private int _previousWidth;
         private int _previousHeight;
@@ -48,8 +50,10 @@ namespace ConsoleRenderer
         private Pixel[] _pixels;
         private Pixel[] _previous;
         
-        /// <summary>Shared across all instances so that every canvas renders to the same console output.</summary>
-        private static Stream? _outputStream;
+        /// <summary>
+        ///     Shared across all instances so that every canvas renders to the same console output.
+        /// </summary>
+        private Stream? _outputStream;
         private ArrayBufferWriter<byte>? _frameBuffer;
         private static bool _ansiInitialized;
 
@@ -70,6 +74,7 @@ namespace ConsoleRenderer
 
             _pixels = new Pixel[Width * Height];
             _previous = new Pixel[Width * Height];
+            _windowsAnsi = new WindowsAnsi();
 
             Resize(width, height);
         }
@@ -307,7 +312,7 @@ namespace ConsoleRenderer
                         lastBg = bg;
                     }
 
-                    WriteUtf8Char(buffer, p.Character);
+                    WriteEncodedChar(buffer, p.Character);
                 }
 
                 // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
@@ -524,6 +529,16 @@ namespace ConsoleRenderer
             return backBuffer ? _previous[index] : _pixels[index];
         }
 
+        /// <summary>
+        ///     Set encoding of the console output (defaults to UTF-8).
+        /// </summary>
+        /// <param name="encoding">Encoding of the console output including ANSI codes.</param>
+        public void SetOutputEncoding(Encoding encoding)
+        {
+            // This will trigger a re-initialisation of the Windows ANSI support during the render call.
+            _windowsAnsi = new WindowsAnsi(encoding);
+        }
+        
         private void ClearPixelCache()
         {
             var defaultPixel = new Pixel
@@ -544,15 +559,8 @@ namespace ConsoleRenderer
 
             lock (typeof(ConsoleCanvas))
             {
-                if (!_ansiInitialized)
-                {
-                    // Windows needs VT mode for ANSI; Linux and macOS terminals already support it
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                        WindowsAnsiHelper.EnableVirtualTerminalProcessing();
-                    Console.OutputEncoding = Encoding.UTF8;
-                    _ansiInitialized = true;
-                }
-
+                _windowsAnsi.EnsureAnsiSupport();
+                
                 if (_outputStream == null)
                     _outputStream = Console.OpenStandardOutput();
 
@@ -584,36 +592,12 @@ namespace ConsoleRenderer
             buffer.Write("m"u8);
         }
 
-        private static void WriteUtf8Char(ArrayBufferWriter<byte> buffer, char c)
+        private static void WriteEncodedChar(ArrayBufferWriter<byte> buffer, char c)
         {
             Span<char> cSpan = stackalloc char[1] { c };
             Span<byte> dest = buffer.GetSpan(4);
-            int written = Encoding.UTF8.GetBytes(cSpan, dest);
+            int written = Console.OutputEncoding.GetBytes(cSpan, dest);
             buffer.Advance(written);
-        }
-
-        private static class WindowsAnsiHelper
-        {
-            private const int StdOutputHandle = -11;
-            private const uint VirtualTerminalProcessingFlag = 0x0004;
-
-            public static void EnableVirtualTerminalProcessing()
-            {
-                var handle = GetStdHandle(StdOutputHandle);
-                if (handle != IntPtr.Zero && GetConsoleMode(handle, out uint mode))
-                {
-                    SetConsoleMode(handle, mode | VirtualTerminalProcessingFlag);
-                }
-            }
-
-            [DllImport("kernel32")]
-            private static extern IntPtr GetStdHandle(int nStdHandle);
-
-            [DllImport("kernel32")]
-            private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
-
-            [DllImport("kernel32")]
-            private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
         }
     }
 }
