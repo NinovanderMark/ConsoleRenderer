@@ -42,8 +42,6 @@ namespace ConsoleRenderer
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
         
-        private WindowsAnsi _windowsAnsi;
-
         private int _previousWidth;
         private int _previousHeight;
         private bool _oddRows;
@@ -74,7 +72,6 @@ namespace ConsoleRenderer
 
             _pixels = new Pixel[Width * Height];
             _previous = new Pixel[Width * Height];
-            _windowsAnsi = new WindowsAnsi();
 
             Resize(width, height);
         }
@@ -529,16 +526,6 @@ namespace ConsoleRenderer
             return backBuffer ? _previous[index] : _pixels[index];
         }
 
-        /// <summary>
-        ///     Set encoding of the console output (defaults to UTF-8).
-        /// </summary>
-        /// <param name="encoding">Encoding of the console output including ANSI codes.</param>
-        public void SetOutputEncoding(Encoding encoding)
-        {
-            // This will trigger a re-initialisation of the Windows ANSI support during the render call.
-            _windowsAnsi = new WindowsAnsi(encoding);
-        }
-        
         private void ClearPixelCache()
         {
             var defaultPixel = new Pixel
@@ -559,7 +546,7 @@ namespace ConsoleRenderer
 
             lock (typeof(ConsoleCanvas))
             {
-                _windowsAnsi.EnsureAnsiSupport();
+                WindowsAnsi.EnsureAnsiSupport();
                 
                 if (_outputStream == null)
                     _outputStream = Console.OpenStandardOutput();

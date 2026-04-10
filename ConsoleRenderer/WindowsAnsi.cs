@@ -4,25 +4,16 @@ using System.Text;
 
 namespace ConsoleRenderer;
 
-internal class WindowsAnsi
+internal static class WindowsAnsi
 {
     
     private const int StdOutputHandle = -11;
     private const uint VirtualTerminalProcessingFlag = 0x0004;
 
-    private readonly Encoding _outputEncoding;
-    private bool _isAnsiInitialized;
-
-    internal WindowsAnsi(): this(Encoding.UTF8)
-    {
-    }
+    private static bool _isAnsiInitialized;
     
-    internal WindowsAnsi(Encoding outputEncoding)
-    {
-        _outputEncoding = outputEncoding;
-    }
 
-    internal void EnsureAnsiSupport()
+    internal static void EnsureAnsiSupport()
     {
         if (_isAnsiInitialized) return;
         
@@ -30,7 +21,6 @@ internal class WindowsAnsi
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             EnableVirtualTerminalProcessing();
 
-        Console.OutputEncoding = _outputEncoding;
         _isAnsiInitialized = true;
     }
 
