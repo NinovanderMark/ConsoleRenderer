@@ -42,7 +42,7 @@ The Examples project can also be run with one of the following arguments to run 
 - Vertical
 
 ## Notes on encoding
-This library doesn't enforce any type of output encoding by design, but I have found that not setting *any* encoding can cause unexpected results on some terminal (i.e. Windows Terminal). 
+This library doesn't enforce any type of output encoding by design, but I have found that not setting *any* encoding can cause unexpected results on some terminals (i.e. Windows Terminal). 
 
 Unless you have a good reason to do otherwise, it's recommended to set `Console.OutputEncoding` to UTF8 in your application prior to rendering.
 
