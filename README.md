@@ -41,22 +41,19 @@ The Examples project can also be run with one of the following arguments to run 
 - Horizontal
 - Vertical
 
+## Notes on encoding
+This library doesn't enforce any type of output encoding by design, but I have found that not setting *any* encoding can cause unexpected results on some terminal (i.e. Windows Terminal). 
+
+Unless you have a good reason to do otherwise, it's recommended to set `Console.OutputEncoding` to UTF8 in your application prior to rendering.
+
 ### Other projects made with ConsoleRenderer
 ![afbeelding](https://www.ninovandermark.nl/img/mining-game.png)
 Unreleased mining game, by Nino van der Mark
 
 # What's the performance like?
-As a general disclaimer, I don't have access to a standalone Linux machine and benchmarks have thus far been done through WSL. If anyone wants to do some more rigorous testing, please be my guest!
+As of version [0.8](https://github.com/NinovanderMark/ConsoleRenderer/releases/tag/v0.8.0), which introduced a streaming approach to writing to the output, most examples run north of a couple of thousand FPS on Windows with a size of 120x30 characters. Examples that redraw major portions of the screen tend to clock in a bit lower at around 80fps. Performance on Linux and MacOS seems significantly better than that. 
 
-The library performs relatively well on anything but redrawing large portions of the screen at once on both Linux & Windows as the `WhiteNoise` and `ColorNoise` examples demonstrate. These examples generally don't achieve framerates north of 10fps on either platform
-
-It seems that performance is negatively impacted most by operations such as repositioning the cursor during rendering, as well as changing either the foreground or background color, meaning that contiguous regions with the same colors perform best, as well as redrawing only limited portions of the screen each frame. 
-
-A good example of significant redraws at higher framerates is the `Rectangles` example, which renders at about 150fps on Windows and over 600fps on Linux on my Lenovo P51 laptop.
-
-Finally, version `0.3.0` added interlaced rendering mode, which can be used to slice the amount of drawing operations in half, thus potentially doubling the framerate, by only updating half the screen rows each frame.
-
-In summary, while it has some limitations, it can be made to run anywhere in the range of acceptable to blisteringly fast.
+All that said, no rigorous benchmarking has been done with the latest version, though I welcome any effort to do so. The bottomline is that it's plenty fast, and should be suitable for anything you might need for common terminal sizes.
 
 ## Supplemental
 
