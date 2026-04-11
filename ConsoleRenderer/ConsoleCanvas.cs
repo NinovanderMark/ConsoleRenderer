@@ -2,8 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace ConsoleRenderer
 {
@@ -53,7 +51,6 @@ namespace ConsoleRenderer
         /// </summary>
         private Stream? _outputStream;
         private ArrayBufferWriter<byte>? _frameBuffer;
-        private static bool _ansiInitialized;
 
         public ConsoleCanvas(int width, int height, bool interlaced = false, bool autoResize = false)
         {
@@ -544,16 +541,13 @@ namespace ConsoleRenderer
             if (_outputStream != null && _frameBuffer != null)
                 return;
 
-            lock (typeof(ConsoleCanvas))
-            {
-                WindowsAnsi.EnsureAnsiSupport();
+            WindowsAnsi.EnsureAnsiSupport();
                 
-                if (_outputStream == null)
-                    _outputStream = Console.OpenStandardOutput();
+            if (_outputStream == null)
+                _outputStream = Console.OpenStandardOutput();
 
-                if (_frameBuffer == null)
-                    _frameBuffer = new ArrayBufferWriter<byte>();
-            }
+            if (_frameBuffer == null)
+                _frameBuffer = new ArrayBufferWriter<byte>();
         }
 
         // ANSI SGR codes for ConsoleColor (index = (int)ConsoleColor): 30-37, 90-97 fg; 40-47, 100-107 bg
