@@ -1,5 +1,7 @@
-﻿using System;
+using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ConsoleRenderer
 {
@@ -37,12 +39,18 @@ namespace ConsoleRenderer
 
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
-
+        
         private int _previousWidth;
         private int _previousHeight;
         private bool _oddRows;
-        private List<List<Pixel>> _pixels;
-        private List<List<Pixel>> _previous;
+        private Pixel[] _pixels;
+        private Pixel[] _previous;
+        
+        /// <summary>
+        ///     Shared across all instances so that every canvas renders to the same console output.
+        /// </summary>
+        private Stream? _outputStream;
+        private ArrayBufferWriter<byte>? _frameBuffer;
 
         public ConsoleCanvas(int width, int height, bool interlaced = false, bool autoResize = false)
         {
@@ -53,9 +61,14 @@ namespace ConsoleRenderer
 
             DefaultForegroundColor = Console.ForegroundColor;
             DefaultBackgroundColor = Console.BackgroundColor;
+            
+            // In Linux Console.ForegroundColor is sometimes not defined (-1).
+            // In that case set it manually.
+            if ((int)DefaultForegroundColor == -1) DefaultForegroundColor = ConsoleColor.Gray;
+            if ((int)DefaultBackgroundColor == -1) DefaultBackgroundColor = ConsoleColor.Black;
 
-            _pixels = new List<List<Pixel>>();
-            _previous = new List<List<Pixel>>();
+            _pixels = new Pixel[Width * Height];
+            _previous = new Pixel[Width * Height];
 
             Resize(width, height);
         }
@@ -83,9 +96,14 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas Fill(char character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = 0; y < Height; y++)
-                for (int x = 0; x < Width; x++)
-                    Set(x, y, character, foreground, background);
+            var pixel = new Pixel
+            {
+                Character = character,
+                Foreground = foreground,
+                Background = background
+            };
+            for (int i = 0; i < _pixels.Length; i++)
+                _pixels[i] = pixel;
 
             return this;
         }
@@ -136,57 +154,56 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = startY; y < startY + height; y++)
+            int endX = startX + width - 1;
+            int endY = startY + height - 1;
+
+            var pixel = new Pixel
             {
-                for (int x = startX; x < startX + width; x++)
+                Foreground = foreground,
+                Background = background,
+                Character = character ?? _emptyCharacter
+            };
+
+            for (int y = startY; y <= endY && y < Height; y++)
+            {
+                for (int x = startX; x <= endX && x < Width; x++)
                 {
-                    if ( y != startY && y + 1 != startY + height && x != startX && x + 1 != startX + width)
-                    {
+                    bool onTop = y == startY;
+                    bool onBottom = y == endY;
+                    bool onLeft = x == startX;
+                    bool onRight = x == endX;
+                    if (!onTop && !onBottom && !onLeft && !onRight)
                         continue;
-                    }
 
-                    char fallback = ' ';
-                    if ( y == startY )
-                    {
-                        if ( x == startX )
-                        {
-                            fallback = '╔';
-                        }
-                        else if ( x + 1 == startX + width)
-                        {
-                            fallback = '╗';
-                        }
-                        else
-                        {
-                            fallback = '═';
-                        }
-                        
-                    }
-                    else if (y + 1 == startY + height)
-                    {
-                        if (x == startX)
-                        {
-                            fallback = '╚';
-                        }
-                        else if (x + 1 == startX + width)
-                        {
-                            fallback = '╝';
-                        }
-                        else
-                        {
-                            fallback = '═';
-                        }
-                    }
-                    else if (x == startX || x + 1 == startX + width)
-                    {
-                        fallback = '║';
-                    }
-
-                    Set(x, y, character ?? fallback, foreground, background);
+                    pixel.Character = character ?? GetBorderChar(x, y, startX, startY, endX, endY);
+                    _pixels[y * Width + x] = pixel;
                 }
             }
 
             return this;
+        }
+
+        private static char GetBorderChar(int x, int y, int startX, int startY, int endX, int endY)
+        {
+            bool onTop = y == startY;
+            bool onBottom = y == endY;
+            bool onLeft = x == startX;
+            bool onRight = x == endX;
+
+            if (onTop)
+            {
+                if (onLeft) return '╔';
+                if (onRight) return '╗';
+                return '═';
+            }
+            if (onBottom)
+            {
+                if (onLeft) return '╚';
+                if (onRight) return '╝';
+                return '═';
+            }
+            if (onLeft || onRight) return '║';
+            return _emptyCharacter;
         }
 
         /// <summary>
@@ -214,10 +231,22 @@ namespace ConsoleRenderer
         /// <param name="background">Color to draw the background with</param>
         public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
         {
-            for (int y = startY; y < Height && y-startY < height; y++)
+            int yMin = Math.Max(0, startY);
+            int yMax = Math.Min(Height, startY + height);
+            int xMin = Math.Max(0, startX);
+            int xMax = Math.Min(Width, startX + width);
+            var pixel = new Pixel
             {
-                for (int x = startX; x < Width && x - startX < width; x++)
-                    Set(x, y, character, foreground, background);
+                Character = character,
+                Foreground = foreground,
+                Background = background
+            };
+
+            for (int y = yMin; y < yMax; y++)
+            {
+                int rowStart = y * Width;
+                for (int x = xMin; x < xMax; x++)
+                    _pixels[rowStart + x] = pixel;
             }
 
             return this;
@@ -228,20 +257,14 @@ namespace ConsoleRenderer
         /// </summary>
         public ConsoleCanvas Render()
         {
-            Console.CursorTop = 0;
-            Console.CursorLeft = 0;
+            EnsureStreamInitialized();
 
-            // Temporary variables to track Console attributes like size, position and color
-            int cursorTop = 0;
-            int cursorLeft = 0;
             int windowWidth = Console.WindowWidth;
             int windowHeight = Console.WindowHeight;
-            ConsoleColor foregroundColor = Console.ForegroundColor;
-            ConsoleColor backgroundColor = Console.BackgroundColor;
 
             if (_previousWidth != windowWidth || _previousHeight != windowHeight)
             {
-                if ( AutoResize )
+                if (AutoResize)
                 {
                     Resize(windowWidth, windowHeight);
                 }
@@ -252,86 +275,61 @@ namespace ConsoleRenderer
                 _previousHeight = windowHeight;
             }
 
-            int leftOperations = 0;
-            int backgroundOperations = 0;
+            int effectiveWidth = Math.Min(Width, windowWidth);
+            int effectiveHeight = Math.Min(Height, windowHeight);
 
-            for (int y = 0; y < Height; y++)
+            ArrayBufferWriter<byte> buffer = _frameBuffer!;
+            buffer.Clear();
+
+            // Cursor to top-left (1-based in ANSI)
+            buffer.Write("\x1b[1;1H"u8);
+
+            int lastFg = -1;
+            int lastBg = -1;
+
+            for (int y = 0; y < effectiveHeight; y++)
             {
-                // See if this is one of the rows we should skip in Interlaced mode
-                if ( Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0)) )
-                    continue;
+                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
 
-                for (int x = 0; x < Width; x++)
-                {                        
-                    if (_pixels[y][x] == _previous[y][x])
-                        continue;
+                for (int x = 0; x < effectiveWidth; x++)
+                {
+                    Pixel p = source[y * Width + x];
+                    int fg = AnsiForeground[(int)p.Foreground];
+                    int bg = AnsiBackground[(int)p.Background];
 
-                    if (x >= windowWidth)
-                        continue;
-
-                    if (y >= windowHeight)
-                        continue;
-
-                    if (cursorLeft != x)
+                    if (fg != lastFg || bg != lastBg)
                     {
-                        try
-                        {
-                            Console.CursorLeft = x;
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            return Render();
-                        }
-
-                        cursorLeft = x;
-                        leftOperations++;
+                        WriteSgr(buffer, fg);
+                        WriteSgr(buffer, bg);
+                        lastFg = fg;
+                        lastBg = bg;
                     }
 
-                    if (cursorTop != y)
-                    {
-                        try
-                        {
-                            Console.CursorTop = y;
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            return Render();
-                        }
+                    WriteEncodedChar(buffer, p.Character);
+                }
 
-                        cursorTop = y;
-                    }
+                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
+                if (y < effectiveHeight - 1)
+                    buffer.Write("\n"u8);
+                
+                lastFg = -1;
+                lastBg = -1;
 
-                    if (_pixels[y][x].Character != ' ' && _pixels[y][x].Foreground != foregroundColor)
-                    {
-                        Console.ForegroundColor = _pixels[y][x].Foreground;
-                        foregroundColor = _pixels[y][x].Foreground;
-                    }
-
-                    if (_pixels[y][x].Background != backgroundColor)
-                    {
-                        Console.BackgroundColor = _pixels[y][x].Background;
-                        backgroundColor = _pixels[y][x].Background;
-                        backgroundOperations++;
-                    }
-
-                    Console.Write(_pixels[y][x].Character);
-                    cursorLeft++;
-
-                    _previous[y][x] = _pixels[y][x];
-
-                    // After writing the last character on the bottom right, reposition the cursor to prevent
-                    // an unintended newline, which may shift the screen downwards, causing jitter
-                    if ( cursorLeft == windowWidth && cursorTop == windowHeight - 1)
-                    {
-                        Console.CursorLeft = 0;
-                        Console.CursorTop = 0;
-                        cursorLeft = 0;
-                        cursorTop = 0;
-                    }
+                if (!skipRow)
+                {
+                    int rowStart = y * Width;
+                    for (int x = 0; x < Width; x++)
+                        _previous[rowStart + x] = source[rowStart + x];
                 }
             }
 
-            // Swap whether we render odd or even rows next frame
+            // Cursor to top-left (1-based in ANSI)
+            buffer.Write("\x1b[1;1H"u8);
+            
+            _outputStream!.Write(buffer.WrittenSpan);
+            _outputStream.Flush();
+
             _oddRows = !_oddRows;
             return this;
         }
@@ -346,29 +344,18 @@ namespace ConsoleRenderer
         {
             Width = width;
             Height = height;
-            _pixels = new List<List<Pixel>>();
-            _previous = new List<List<Pixel>>();
+            _pixels = new Pixel[Width * Height];
+            _previous = new Pixel[Width * Height];
 
-            for (int y = 0; y < Height; y++)
+            var defaultPixel = new Pixel
             {
-                var row = new List<Pixel>();
-                var previousRow = new List<Pixel>();
-                for (int x = 0; x < Width; x++)
-                {
-                    var pixel = new Pixel
-                    {
-                        Character = _emptyCharacter,
-                        Foreground = DefaultForegroundColor,
-                        Background = DefaultBackgroundColor
-                    };
+                Background = DefaultBackgroundColor,
+                Foreground = DefaultForegroundColor,
+                Character = _emptyCharacter
+            };
 
-                    row.Add(pixel);
-                    previousRow.Add(pixel);
-                }
-
-                _pixels.Add(row);
-                _previous.Add(previousRow);
-            }
+            Array.Fill(_pixels, defaultPixel);
+            Array.Fill(_previous, defaultPixel);
 
             return this;
         }
@@ -435,7 +422,7 @@ namespace ConsoleRenderer
         public ConsoleCanvas Set(int x, int y, Pixel pixel)
         {
             if (x >= 0 && x < Width && y >= 0 && y < Height)
-                _pixels[y][x] = pixel;
+                _pixels[y * Width + x] = pixel;
 
             return this;
         }
@@ -449,10 +436,15 @@ namespace ConsoleRenderer
         /// <param name="pixels">Pixels to set at the specified coordinates</param>
         public ConsoleCanvas Set(int x, int y, Pixel[] pixels)
         {
-            for (int t = 0; t < pixels.Length; t++)
-            {
-                Set(x+t, y, pixels[t]);
-            }
+            if (y < 0 || y >= Height || pixels.Length == 0)
+                return this;
+            int start = Math.Max(0, -x);
+            int count = Math.Min(pixels.Length - start, Width - (x + start));
+            if (count <= 0)
+                return this;
+            int rowStart = y * Width;
+            for (int i = 0; i < count; i++)
+                _pixels[rowStart + x + start + i] = pixels[start + i];
 
             return this;
         }
@@ -466,10 +458,15 @@ namespace ConsoleRenderer
         /// <param name="pixels">Pixels to set at the specified coordinates</param>
         public ConsoleCanvas Set(int x, int y, List<Pixel> pixels)
         {
-            for (int t = 0; t < pixels.Count; t++)
-            {
-                Set(x + t, y, pixels[t]);
-            }
+            if (y < 0 || y >= Height || pixels.Count == 0)
+                return this;
+            int start = Math.Max(0, -x);
+            int count = Math.Min(pixels.Count - start, Width - (x + start));
+            if (count <= 0)
+                return this;
+            int rowStart = y * Width;
+            for (int i = 0; i < count; i++)
+                _pixels[rowStart + x + start + i] = pixels[start + i];
 
             return this;
         }
@@ -486,16 +483,22 @@ namespace ConsoleRenderer
         public ConsoleCanvas Text(int x, int y, string text, bool centered = false, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
             // If the text should be centered, deduct half the text length from the x coordinate
-            int startX = centered ? x - (int) Math.Floor(text.Length/2d) : x;
+            int startX = centered ? x - (int)Math.Floor(text.Length / 2d) : x;
+            var fg = foreground ?? DefaultForegroundColor;
+            var bg = background ?? DefaultBackgroundColor;
 
-            for (int t = 0; t < text.Length && t < Width; t++)
+            if (y < 0 || y >= Height)
+                return this;
+            int rowStart = y * Width;
+            var pixel = new Pixel { Foreground = fg, Background = bg };
+            for (int t = 0; t < text.Length; t++)
             {
-                Set(startX + t, y, new Pixel
+                int px = startX + t;
+                if (px >= 0 && px < Width)
                 {
-                    Character = text[t],
-                    Foreground = foreground ?? DefaultForegroundColor,
-                    Background = background ?? DefaultBackgroundColor
-                });
+                    pixel.Character = text[t];
+                    _pixels[rowStart + px] = pixel;
+                }
             }
 
             return this;
@@ -504,6 +507,8 @@ namespace ConsoleRenderer
         /// <summary>
         /// Returns the <see cref="Pixel"/> at the given <paramref name="x"/>,<paramref name="y"/> coordinates
         /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <param name="backBuffer">Whether to return the pixel as it was last drawn (<see cref="true"/>), or the
         /// one that will be drawn at the next call to <see cref="Render"/></param>
         /// <exception cref="IndexOutOfRangeException"></exception>
@@ -514,7 +519,8 @@ namespace ConsoleRenderer
                 throw new IndexOutOfRangeException($"The coordinates {x},{y} need to be positive and less than {Width} and {Height}");
             }
 
-            return backBuffer ? _previous[y][x] : _pixels[y][x];
+            int index = y * Width + x;
+            return backBuffer ? _previous[index] : _pixels[index];
         }
 
         private void ClearPixelCache()
@@ -523,12 +529,56 @@ namespace ConsoleRenderer
             {
                 Background = DefaultBackgroundColor,
                 Foreground = DefaultForegroundColor,
-                Character = '\u00A0'
+                Character = _emptyCharacter
             };
 
-            for (int y = 0; y < Height; y++)
-                for (int x = 0; x < Width; x++)
-                    _previous[y][x] = defaultPixel;
+            for (int i = 0; i < _previous.Length; i++)
+                _previous[i] = defaultPixel;
+        }
+
+        private void EnsureStreamInitialized()
+        {
+            if (_outputStream != null && _frameBuffer != null)
+                return;
+
+            WindowsAnsi.EnsureAnsiSupport();
+                
+            if (_outputStream == null)
+                _outputStream = Console.OpenStandardOutput();
+
+            if (_frameBuffer == null)
+                _frameBuffer = new ArrayBufferWriter<byte>();
+        }
+
+        // ANSI SGR codes for ConsoleColor (index = (int)ConsoleColor): 30-37, 90-97 fg; 40-47, 100-107 bg
+        private static readonly int[] AnsiForeground = { 30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97 };
+        private static readonly int[] AnsiBackground = { 40, 44, 42, 46, 41, 45, 43, 47, 100, 104, 102, 106, 101, 105, 103, 107 };
+
+        private static void WriteSgr(ArrayBufferWriter<byte> buffer, int code)
+        {
+            buffer.Write("\x1b["u8);
+            if (code >= 100)
+            {
+                buffer.Write("1"u8);
+                buffer.Write(stackalloc byte[] { (byte)('0' + (code / 10 % 10)), (byte)('0' + (code % 10)) });
+            }
+            else if (code >= 10)
+            {
+                buffer.Write(stackalloc byte[] { (byte)('0' + (code / 10)), (byte)('0' + (code % 10)) });
+            }
+            else
+            {
+                buffer.Write(stackalloc byte[] { (byte)('0' + code) });
+            }
+            buffer.Write("m"u8);
+        }
+
+        private static void WriteEncodedChar(ArrayBufferWriter<byte> buffer, char c)
+        {
+            Span<char> cSpan = stackalloc char[1] { c };
+            Span<byte> dest = buffer.GetSpan(4);
+            int written = Console.OutputEncoding.GetBytes(cSpan, dest);
+            buffer.Advance(written);
         }
     }
 }
