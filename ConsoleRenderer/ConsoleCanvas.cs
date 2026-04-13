@@ -261,16 +261,13 @@ namespace ConsoleRenderer
 
             int windowWidth = Console.WindowWidth;
             int windowHeight = Console.WindowHeight;
+            bool isSizeChanged = _previousWidth!= windowWidth || _previousHeight!= windowHeight;
 
-            if (_previousWidth != windowWidth || _previousHeight != windowHeight)
+            if (isSizeChanged)
             {
-                if (AutoResize)
-                {
-                    Resize(windowWidth, windowHeight);
-                }
+                if (AutoResize) Resize(windowWidth, windowHeight);
 
                 ClearPixelCache();
-
                 _previousWidth = windowWidth;
                 _previousHeight = windowHeight;
             }
@@ -281,54 +278,39 @@ namespace ConsoleRenderer
             ArrayBufferWriter<byte> buffer = _frameBuffer!;
             buffer.Clear();
 
-            // Cursor to top-left (1-based in ANSI)
-            buffer.Write("\x1b[1;1H"u8);
-
-            int lastFg = -1;
-            int lastBg = -1;
-
-            for (int y = 0; y < effectiveHeight; y++)
+            if (isSizeChanged)
             {
-                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
-                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
-
-                for (int x = 0; x < effectiveWidth; x++)
+                // Cursor to top-left (1-based in ANSI)
+                buffer.Write("\x1b[1;1H"u8);
+                FullRedraw(effectiveWidth, effectiveHeight, buffer);
+            }
+            else
+            { 
+                // We do NOT write 1;1 here. RenderCluster handles its own positioning.
+                // Perform sparse update
+                for (int y = 0; y < effectiveHeight; y++)
                 {
-                    Pixel p = source[y * Width + x];
-                    int fg = AnsiForeground[(int)p.Foreground];
-                    int bg = AnsiBackground[(int)p.Background];
+                    bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                    if (skipRow) continue;
 
-                    if (fg != lastFg || bg != lastBg)
+                    for (int x = 0; x < effectiveWidth; x++)
                     {
-                        WriteSgr(buffer, fg);
-                        WriteSgr(buffer, bg);
-                        lastFg = fg;
-                        lastBg = bg;
+                        int idx = y * Width + x;
+                        if (_pixels[idx] != _previous[idx])
+                        {
+                            // Found a 'dirty' pixel.
+                            // Start a cluster: look ahead in this row to see whether we should over-draw
+                            // or jump to the next cluster.
+                            x = RenderCluster(effectiveWidth, x, y, buffer);
+                        }
                     }
-
-                    WriteEncodedChar(buffer, p.Character);
-                }
-
-                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
-                if (y < effectiveHeight - 1)
-                    buffer.Write("\n"u8);
-                
-                lastFg = -1;
-                lastBg = -1;
-
-                if (!skipRow)
-                {
-                    int rowStart = y * Width;
-                    for (int x = 0; x < Width; x++)
-                        _previous[rowStart + x] = source[rowStart + x];
                 }
             }
-
-            // Cursor to top-left (1-based in ANSI)
-            buffer.Write("\x1b[1;1H"u8);
             
             _outputStream!.Write(buffer.WrittenSpan);
             _outputStream.Flush();
+            // After rendering, sync the buffers so we know what to diff next time
+            _pixels.CopyTo(_previous);
 
             _oddRows = !_oddRows;
             return this;
@@ -550,6 +532,138 @@ namespace ConsoleRenderer
                 _frameBuffer = new ArrayBufferWriter<byte>();
         }
 
+        /// <summary>
+        /// Fully redraws the entire window.
+        /// Recommended to use only after resize.
+        /// </summary>
+        /// <param name="effectiveWidth">Width of the buffer to draw.</param>
+        /// <param name="effectiveHeight">Height of the buffer to draw.</param>
+        /// <param name="buffer">Buffer to draw into (stream the ansi codes).</param>
+        private void FullRedraw(int effectiveWidth, int effectiveHeight, in ArrayBufferWriter<byte> buffer)
+        {
+            int lastFg = -1;
+            int lastBg = -1;
+            for (int y = 0; y < effectiveHeight; y++)
+            {
+                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
+                int indexOffset = y * Width;
+                
+                for (int x = 0; x < effectiveWidth; x++)
+                {
+                    Pixel p = source[indexOffset + x];
+                    int fg = AnsiForeground[(int)p.Foreground];
+                    int bg = AnsiBackground[(int)p.Background];
+
+                    if (fg != lastFg || bg != lastBg)
+                    {
+                        WriteSgr(buffer, fg);
+                        WriteSgr(buffer, bg);
+                        lastFg = fg;
+                        lastBg = bg;
+                    }
+
+                    WriteEncodedChar(buffer, p.Character);
+                }
+
+                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
+                if (y < effectiveHeight - 1)
+                    buffer.Write("\n"u8);
+                
+                lastFg = -1;
+                lastBg = -1;
+
+                if (!skipRow)
+                {
+                    for (int x = 0; x < Width; x++)
+                        _previous[indexOffset + x] = source[indexOffset + x];
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Renders a cluster of changed pixels.
+        /// If there is a gap of a clean pixels in-between dirty pixels, one of two options will happen:
+        /// - re-render it if the gap is sufficiently small
+        /// - finish the cluster, skip the gap and start a new cluster if the clean gap is too small.
+        /// </summary>
+        /// <param name="effectiveWidth">Width of the window to render.</param>
+        /// <param name="startX">Current position in the row to render.</param>
+        /// <param name="y">Row.</param>
+        /// <param name="source">Source buffer to draw from.</param>
+        /// <param name="buffer">Writer to stream the Ansi code bytes to.</param>
+        /// <returns>New position of X after the cluster has been rendered.</returns>
+        private int RenderCluster(
+            int effectiveWidth,
+            int startX,
+            int y,
+            in ArrayBufferWriter<byte> buffer)
+        {
+            int currentX = startX;
+            int rowOffset = y * Width;
+            int lastFg = -1;
+            int lastBg = -1;
+
+            // 1. Move Cursor (Note the +1 for 1-based terminal coords)
+            Span<byte> ansiBuffer = stackalloc byte[32];
+            if (System.Text.Unicode.Utf8.TryWrite(ansiBuffer, $"\x1b[{y + 1};{startX + 1}H", out int bytesWritten))
+            {
+                buffer.Write(ansiBuffer[..bytesWritten]);
+            }
+
+            while (currentX < effectiveWidth)
+            {
+                int index = rowOffset + currentX;
+                Pixel p = _pixels[index];
+
+                // 2. State-aware Color Update
+                int fg = AnsiForeground[(int)p.Foreground];
+                int bg = AnsiBackground[(int)p.Background];
+
+                if (fg != lastFg) { WriteSgr(buffer, fg); lastFg = fg; }
+                if (bg != lastBg) { WriteSgr(buffer, bg); lastBg = bg; }
+
+                // 3. Write the character
+                WriteEncodedChar(buffer, p.Character);
+                currentX++;
+
+                // 4. Look Ahead Logic
+                if (currentX < effectiveWidth)
+                {
+                    int nextIndex = rowOffset + currentX;
+                    // If the next pixel is clean (unchanged)...
+                    if (_pixels[nextIndex] == _previous[nextIndex])
+                    {
+                        int gapSize = CountCleanGap(currentX, rowOffset, effectiveWidth);
+                
+                        // If gap is too big, stop this cluster and jump later
+                        if (gapSize > 6) break; 
+
+                        // Otherwise, the loop just continues naturally.
+                        // The next iteration will "overdraw" the clean pixels.
+                    }
+                }
+            }
+            return currentX;
+        }
+        
+        private int CountCleanGap(int currentX, int rowOffset, int effectiveWidth)
+        {
+            int gapSize = 0;
+            for (int x = currentX; x < effectiveWidth; x++)
+            {
+                int index = rowOffset + x;
+                if (_pixels[index] != _previous[index])
+                {
+                    return gapSize;
+                }
+
+                gapSize++;
+            }
+
+            return gapSize;
+        }
+        
         // ANSI SGR codes for ConsoleColor (index = (int)ConsoleColor): 30-37, 90-97 fg; 40-47, 100-107 bg
         private static readonly int[] AnsiForeground = { 30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97 };
         private static readonly int[] AnsiBackground = { 40, 44, 42, 46, 41, 45, 43, 47, 100, 104, 102, 106, 101, 105, 103, 107 };
