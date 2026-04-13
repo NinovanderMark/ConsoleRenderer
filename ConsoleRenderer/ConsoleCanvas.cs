@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace ConsoleRenderer
 {
@@ -563,7 +564,14 @@ namespace ConsoleRenderer
                         lastBg = bg;
                     }
 
-                    WriteEncodedChar(buffer, p.Character);
+                    if (Equals(Console.OutputEncoding, Encoding.UTF8))
+                    {
+                        WriteEncodedCharUtf8(buffer, p.Character);
+                    }
+                    else
+                    {
+                        WriteEncodedChar(buffer, p.Character);
+                    }
                 }
 
                 // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
@@ -624,7 +632,15 @@ namespace ConsoleRenderer
                 if (bg != lastBg) { WriteSgr(buffer, bg); lastBg = bg; }
 
                 // 3. Write the character
-                WriteEncodedChar(buffer, p.Character);
+                if (Equals(Console.OutputEncoding, Encoding.UTF8))
+                {
+                    WriteEncodedCharUtf8(buffer, p.Character);
+                }
+                else
+                {
+                    WriteEncodedChar(buffer, p.Character);
+                }
+                
                 currentX++;
 
                 // 4. Look Ahead Logic
@@ -693,6 +709,35 @@ namespace ConsoleRenderer
             Span<byte> dest = buffer.GetSpan(4);
             int written = Console.OutputEncoding.GetBytes(cSpan, dest);
             buffer.Advance(written);
+        }
+        
+        // For performance testing
+        
+        /// <summary>
+        /// Writing an encoded char in UTF can be done completely allocation free - no GC pressure at all.
+        /// Need to set Console.OutputEncoding = Encoding.UTF8;.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="c"></param>
+        private static void WriteEncodedCharUtf8(ArrayBufferWriter<byte> buffer, char c)
+        {
+            // 1. The ASCII Fast-Path: 90% of your TUI (ANSI codes, standard letters, numbers) 
+            // falls into this category. It completely skips the encoding engine.
+            if (c <= 127)
+            {
+                buffer.GetSpan(1)[0] = (byte)c;
+                buffer.Advance(1);
+                return;
+            }
+
+            // 2. The Unicode Path (Box drawing characters, symbols)
+            // System.Text.Rune is fast and guaranteed zero-allocation
+            var rune = new Rune(c);
+    
+            // GetSpan(4) because a UTF-8 character is at most 4 bytes long
+            int bytesWritten = rune.EncodeToUtf8(buffer.GetSpan(4));
+    
+            buffer.Advance(bytesWritten);
         }
     }
 }
