@@ -144,8 +144,7 @@ namespace ConsoleRenderer
         /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
         public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character = null)
         {
-            return CreateBorder(startX, startY, width, height, character, DefaultForegroundColor,
-                DefaultBackgroundColor);
+            return CreateBorder(startX, startY, width, height, character, DefaultForegroundColor, DefaultBackgroundColor);
         }
 
         /// <summary>
@@ -159,8 +158,7 @@ namespace ConsoleRenderer
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
         /// <returns></returns>
-        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character,
-            ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, ConsoleColor foreground, ConsoleColor background)
         {
             int endX = startX + width - 1;
             int endY = startY + height - 1;
