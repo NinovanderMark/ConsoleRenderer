@@ -291,31 +291,24 @@ namespace ConsoleRenderer
             ArrayBufferWriter<byte> buffer = _frameBuffer!;
             buffer.Clear();
 
-            if (isSizeChanged)
+            buffer.Write("\x1b[1;1H"u8);
+            // We do not write 1;1 here. RenderCluster handles its own positioning.
+            // Perform sparse update
+            for (int y = 0; y < effectiveHeight; y++)
             {
-                // Cursor to top-left (1-based in ANSI)
-                buffer.Write("\x1b[1;1H"u8);
-                FullRedraw(effectiveWidth, effectiveHeight, buffer);
-            }
-            else
-            {
-                // We do not write 1;1 here. RenderCluster handles its own positioning.
-                // Perform sparse update
-                for (int y = 0; y < effectiveHeight; y++)
-                {
-                    bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
-                    if (skipRow) continue;
+                bool skipRow =
+                    Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                if (skipRow) continue;
 
-                    for (int x = 0; x < effectiveWidth; x++)
+                for (int x = 0; x < effectiveWidth; x++)
+                {
+                    int idx = y * Width + x;
+                    if (_pixels[idx] != _previous[idx])
                     {
-                        int idx = y * Width + x;
-                        if (_pixels[idx] != _previous[idx])
-                        {
-                            // Found a 'dirty' pixel.
-                            // Start a cluster: look ahead in this row to see whether we should over-draw
-                            // or jump to the next cluster.
-                            x = RenderCluster(effectiveWidth, x, y, buffer);
-                        }
+                        // Found a 'dirty' pixel.
+                        // Start a cluster: look ahead in this row to see whether we should over-draw
+                        // or jump to the next cluster.
+                        x = RenderCluster(effectiveWidth, x, y, buffer);
                     }
                 }
             }
@@ -545,43 +538,6 @@ namespace ConsoleRenderer
 
             if (_frameBuffer == null)
                 _frameBuffer = new ArrayBufferWriter<byte>();
-        }
-
-        /// <summary>
-        /// Fully redraws the entire window.
-        /// Recommended to use only after resize.
-        /// </summary>
-        /// <param name="effectiveWidth">Width of the buffer to draw.</param>
-        /// <param name="effectiveHeight">Height of the buffer to draw.</param>
-        /// <param name="buffer">Buffer to draw into (stream the ansi codes).</param>
-        private void FullRedraw(int effectiveWidth, int effectiveHeight, in ArrayBufferWriter<byte> buffer)
-        {
-            _lastFg = -1;
-            _lastBg = -1;
-            for (int y = 0; y < effectiveHeight; y++)
-            {
-                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
-                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
-                int indexOffset = y * Width;
-
-                for (int x = 0; x < effectiveWidth; x++)
-                {
-                    Pixel p = source[indexOffset + x];
-                    WritePixelAnsi(p, buffer);
-                }
-
-                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
-                if (y < effectiveHeight - 1)
-                    buffer.Write("\n"u8);
-
-                _lastFg = -1;
-                _lastBg = -1;
-
-                if (skipRow) continue;
-
-                for (int x = 0; x < Width; x++)
-                    _previous[indexOffset + x] = source[indexOffset + x];
-            }
         }
 
         /// <summary>
