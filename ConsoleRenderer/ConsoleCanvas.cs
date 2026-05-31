@@ -591,22 +591,11 @@ namespace ConsoleRenderer
             return currentX;
         }
 
-        private void MoveCursorAnsi(int x, int y, in ArrayBufferWriter<byte> buffer)
+        private static void MoveCursorAnsi(int x, int y, in ArrayBufferWriter<byte> buffer)
         {
             Span<byte> ansiBuffer = stackalloc byte[32];
-            if (!Equals(Console.OutputEncoding, Encoding.UTF8))
-            {
-                int written = Console.OutputEncoding.GetBytes($"\x1b[{y + 1};{x + 1}H", ansiBuffer);
-                buffer.Write(ansiBuffer[..written]);
-            }
-            else
-            {
-                // Performance optimization for Unicode
-                if (System.Text.Unicode.Utf8.TryWrite(ansiBuffer, $"\x1b[{y + 1};{x + 1}H", out int bytesWritten))
-                {
-                    buffer.Write(ansiBuffer[..bytesWritten]);
-                }
-            }
+            int written = Console.OutputEncoding.GetBytes($"\x1b[{y + 1};{x + 1}H", ansiBuffer);
+            buffer.Write(ansiBuffer[..written]);
         }
 
         private void WritePixelAnsi(Pixel p, in ArrayBufferWriter<byte> buffer)
@@ -628,10 +617,7 @@ namespace ConsoleRenderer
             }
 
             // 3. Write the character
-            if (Equals(Console.OutputEncoding, Encoding.UTF8))
-                WriteEncodedCharUtf8(buffer, p.Character);
-            else
-                WriteEncodedChar(buffer, p.Character);
+            WriteEncodedChar(buffer, p.Character);
         }
 
         private int CountCleanGap(int currentX, int rowOffset, int effectiveWidth)
@@ -684,35 +670,6 @@ namespace ConsoleRenderer
             Span<byte> dest = buffer.GetSpan(4);
             int written = Console.OutputEncoding.GetBytes(cSpan, dest);
             buffer.Advance(written);
-        }
-
-        // For performance testing
-
-        /// <summary>
-        /// Writing an encoded char in UTF can be done completely allocation free - no GC pressure at all.
-        /// Need to set Console.OutputEncoding = Encoding.UTF8;.
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="c"></param>
-        private static void WriteEncodedCharUtf8(ArrayBufferWriter<byte> buffer, char c)
-        {
-            // 1. The ASCII Fast-Path: 90% of your TUI (ANSI codes, standard letters, numbers) 
-            // falls into this category. It completely skips the encoding engine.
-            if (c <= 127)
-            {
-                buffer.GetSpan(1)[0] = (byte)c;
-                buffer.Advance(1);
-                return;
-            }
-
-            // 2. The Unicode Path (Box drawing characters, symbols)
-            // System.Text.Rune is fast and guaranteed zero-allocation
-            var rune = new Rune(c);
-
-            // GetSpan(4) because a UTF-8 character is at most 4 bytes long
-            int bytesWritten = rune.EncodeToUtf8(buffer.GetSpan(4));
-
-            buffer.Advance(bytesWritten);
         }
     }
 }
