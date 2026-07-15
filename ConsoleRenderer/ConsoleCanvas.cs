@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace ConsoleRenderer
 {
@@ -39,17 +40,22 @@ namespace ConsoleRenderer
 
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
-        
+
         private int _previousWidth;
         private int _previousHeight;
         private bool _oddRows;
         private Pixel[] _pixels;
         private Pixel[] _previous;
-        
+
+        // Cached foregrounds and backgrounds to reduce writing ansi codes for repeated colors.
+        private int _lastFg;
+        private int _lastBg;
+
         /// <summary>
         ///     Shared across all instances so that every canvas renders to the same console output.
         /// </summary>
         private Stream? _outputStream;
+
         private ArrayBufferWriter<byte>? _frameBuffer;
 
         public ConsoleCanvas(int width, int height, bool interlaced = false, bool autoResize = false)
@@ -61,7 +67,7 @@ namespace ConsoleRenderer
 
             DefaultForegroundColor = Console.ForegroundColor;
             DefaultBackgroundColor = Console.BackgroundColor;
-            
+
             // In Linux Console.ForegroundColor is sometimes not defined (-1).
             // In that case set it manually.
             if ((int)DefaultForegroundColor == -1) DefaultForegroundColor = ConsoleColor.Gray;
@@ -73,7 +79,7 @@ namespace ConsoleRenderer
             Resize(width, height);
         }
 
-        public ConsoleCanvas(bool interlaced = false, bool autoResize = false) 
+        public ConsoleCanvas(bool interlaced = false, bool autoResize = false)
             : this(Console.WindowWidth, Console.WindowHeight, interlaced, autoResize)
         {
         }
@@ -196,12 +202,14 @@ namespace ConsoleRenderer
                 if (onRight) return '╗';
                 return '═';
             }
+
             if (onBottom)
             {
                 if (onLeft) return '╚';
                 if (onRight) return '╝';
                 return '═';
             }
+
             if (onLeft || onRight) return '║';
             return _emptyCharacter;
         }
@@ -214,9 +222,11 @@ namespace ConsoleRenderer
         /// <param name="width">Width of the rectangle</param>
         /// <param name="height">Height of the rectangle</param>
         /// <param name="character">Character to fill the rectangle with</param>
-        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character = _defaultCharacter)
+        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height,
+            char character = _defaultCharacter)
         {
-            return CreateRectangle(startX, startY, width, height, character, DefaultForegroundColor, DefaultBackgroundColor);
+            return CreateRectangle(startX, startY, width, height, character, DefaultForegroundColor,
+                DefaultBackgroundColor);
         }
 
         /// <summary>
@@ -229,7 +239,8 @@ namespace ConsoleRenderer
         /// <param name="character">Character to fill the rectangle with</param>
         /// <param name="foreground">Color to draw the character with</param>
         /// <param name="background">Color to draw the background with</param>
-        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
+        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character,
+            ConsoleColor foreground, ConsoleColor background)
         {
             int yMin = Math.Max(0, startY);
             int yMax = Math.Min(Height, startY + height);
@@ -261,16 +272,13 @@ namespace ConsoleRenderer
 
             int windowWidth = Console.WindowWidth;
             int windowHeight = Console.WindowHeight;
+            bool isSizeChanged = _previousWidth != windowWidth || _previousHeight != windowHeight;
 
-            if (_previousWidth != windowWidth || _previousHeight != windowHeight)
+            if (isSizeChanged)
             {
-                if (AutoResize)
-                {
-                    Resize(windowWidth, windowHeight);
-                }
+                if (AutoResize) Resize(windowWidth, windowHeight);
 
                 ClearPixelCache();
-
                 _previousWidth = windowWidth;
                 _previousHeight = windowHeight;
             }
@@ -281,54 +289,32 @@ namespace ConsoleRenderer
             ArrayBufferWriter<byte> buffer = _frameBuffer!;
             buffer.Clear();
 
-            // Cursor to top-left (1-based in ANSI)
             buffer.Write("\x1b[1;1H"u8);
-
-            int lastFg = -1;
-            int lastBg = -1;
-
+            // We do not write 1;1 here. RenderCluster handles its own positioning.
+            // Perform sparse update
             for (int y = 0; y < effectiveHeight; y++)
             {
-                bool skipRow = Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
-                ReadOnlySpan<Pixel> source = skipRow ? _previous : _pixels;
+                bool skipRow =
+                    Interlaced && ((_oddRows && y % 2 == 0) || (!_oddRows && y % 2 != 0));
+                if (skipRow) continue;
 
                 for (int x = 0; x < effectiveWidth; x++)
                 {
-                    Pixel p = source[y * Width + x];
-                    int fg = AnsiForeground[(int)p.Foreground];
-                    int bg = AnsiBackground[(int)p.Background];
-
-                    if (fg != lastFg || bg != lastBg)
+                    int idx = y * Width + x;
+                    if (_pixels[idx] != _previous[idx])
                     {
-                        WriteSgr(buffer, fg);
-                        WriteSgr(buffer, bg);
-                        lastFg = fg;
-                        lastBg = bg;
+                        // Found a 'dirty' pixel.
+                        // Start a cluster: look ahead in this row to see whether we should over-draw
+                        // or jump to the next cluster.
+                        x = RenderCluster(effectiveWidth, x, y, buffer);
                     }
-
-                    WriteEncodedChar(buffer, p.Character);
-                }
-
-                // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
-                if (y < effectiveHeight - 1)
-                    buffer.Write("\n"u8);
-                
-                lastFg = -1;
-                lastBg = -1;
-
-                if (!skipRow)
-                {
-                    int rowStart = y * Width;
-                    for (int x = 0; x < Width; x++)
-                        _previous[rowStart + x] = source[rowStart + x];
                 }
             }
 
-            // Cursor to top-left (1-based in ANSI)
-            buffer.Write("\x1b[1;1H"u8);
-            
             _outputStream!.Write(buffer.WrittenSpan);
             _outputStream.Flush();
+            // After rendering, sync the buffers so we know what to diff next time
+            _pixels.CopyTo(_previous);
 
             _oddRows = !_oddRows;
             return this;
@@ -480,7 +466,8 @@ namespace ConsoleRenderer
         /// <param name="centered">Whether the text should be centered around the <paramref name="x"/> coordinate</param>
         /// <param name="foreground">Foreground color to draw the string with, or <see cref="DefaultForegroundColor"/> if <see cref="null"/></param>
         /// <param name="background">Background color to draw the string with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
-        public ConsoleCanvas Text(int x, int y, string text, bool centered = false, ConsoleColor? foreground = null, ConsoleColor? background = null)
+        public ConsoleCanvas Text(int x, int y, string text, bool centered = false, ConsoleColor? foreground = null,
+            ConsoleColor? background = null)
         {
             // If the text should be centered, deduct half the text length from the x coordinate
             int startX = centered ? x - (int)Math.Floor(text.Length / 2d) : x;
@@ -514,9 +501,10 @@ namespace ConsoleRenderer
         /// <exception cref="IndexOutOfRangeException"></exception>
         public Pixel Get(int x, int y, bool backBuffer = true)
         {
-            if ( x < 0 || y < 0 || x >= Width || y >= Height)
+            if (x < 0 || y < 0 || x >= Width || y >= Height)
             {
-                throw new IndexOutOfRangeException($"The coordinates {x},{y} need to be positive and less than {Width} and {Height}");
+                throw new IndexOutOfRangeException(
+                    $"The coordinates {x},{y} need to be positive and less than {Width} and {Height}");
             }
 
             int index = y * Width + x;
@@ -542,7 +530,7 @@ namespace ConsoleRenderer
                 return;
 
             WindowsAnsi.EnsureAnsiSupport();
-                
+
             if (_outputStream == null)
                 _outputStream = Console.OpenStandardOutput();
 
@@ -550,9 +538,109 @@ namespace ConsoleRenderer
                 _frameBuffer = new ArrayBufferWriter<byte>();
         }
 
+        /// <summary>
+        /// Renders a cluster of changed pixels.
+        /// If there is a gap of a clean pixels in-between dirty pixels, one of two options will happen:
+        /// - re-render it if the gap is sufficiently small
+        /// - finish the cluster, skip the gap and start a new cluster if the clean gap is too small.
+        /// </summary>
+        /// <param name="effectiveWidth">Width of the window to render.</param>
+        /// <param name="startX">Current position in the row to render.</param>
+        /// <param name="y">Row.</param>
+        /// <param name="source">Source buffer to draw from.</param>
+        /// <param name="buffer">Writer to stream the Ansi code bytes to.</param>
+        /// <returns>New position of X after the cluster has been rendered.</returns>
+        private int RenderCluster(
+            int effectiveWidth,
+            int startX,
+            int y,
+            in ArrayBufferWriter<byte> buffer)
+        {
+            int currentX = startX;
+            int rowOffset = y * Width;
+            _lastFg = -1;
+            _lastBg = -1;
+
+            // 1. Move Cursor (Note the +1 for 1-based terminal coords)
+            MoveCursorAnsi(currentX, y, buffer);
+
+            while (currentX < effectiveWidth)
+            {
+                int index = rowOffset + currentX;
+                Pixel p = _pixels[index];
+                WritePixelAnsi(p, buffer);
+
+                currentX++;
+                if (currentX >= effectiveWidth) continue;
+                
+                // 4. Look Ahead Logic
+                int nextIndex = rowOffset + currentX;
+                    
+                if (_pixels[nextIndex] != _previous[nextIndex]) continue;
+                // If the next pixel is clean (unchanged), then start counting the gap
+                int gapSize = CountCleanGap(currentX, rowOffset, effectiveWidth);
+                // If gap is too big, stop this cluster and jump later
+                if (gapSize > 6) break;
+
+                // Otherwise, the loop just continues naturally.
+                // The next iteration will "overdraw" the clean pixels.
+            }
+
+            return currentX;
+        }
+
+        private static void MoveCursorAnsi(int x, int y, in ArrayBufferWriter<byte> buffer)
+        {
+            Span<byte> ansiBuffer = stackalloc byte[32];
+            int written = Console.OutputEncoding.GetBytes($"\x1b[{y + 1};{x + 1}H", ansiBuffer);
+            buffer.Write(ansiBuffer[..written]);
+        }
+
+        private void WritePixelAnsi(Pixel p, in ArrayBufferWriter<byte> buffer)
+        {
+            // 2. State-aware Color Update
+            int fg = AnsiForeground[(int)p.Foreground];
+            int bg = AnsiBackground[(int)p.Background];
+
+            if (fg != _lastFg)
+            {
+                WriteSgr(buffer, fg);
+                _lastFg = fg;
+            }
+
+            if (bg != _lastBg)
+            {
+                WriteSgr(buffer, bg);
+                _lastBg = bg;
+            }
+
+            // 3. Write the character
+            WriteEncodedChar(buffer, p.Character);
+        }
+
+        private int CountCleanGap(int currentX, int rowOffset, int effectiveWidth)
+        {
+            int gapSize = 0;
+            for (int x = currentX; x < effectiveWidth; x++)
+            {
+                int index = rowOffset + x;
+                if (_pixels[index] != _previous[index])
+                {
+                    return gapSize;
+                }
+
+                gapSize++;
+            }
+
+            return gapSize;
+        }
+
         // ANSI SGR codes for ConsoleColor (index = (int)ConsoleColor): 30-37, 90-97 fg; 40-47, 100-107 bg
-        private static readonly int[] AnsiForeground = { 30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97 };
-        private static readonly int[] AnsiBackground = { 40, 44, 42, 46, 41, 45, 43, 47, 100, 104, 102, 106, 101, 105, 103, 107 };
+        private static readonly int[] AnsiForeground =
+            { 30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97 };
+
+        private static readonly int[] AnsiBackground =
+            { 40, 44, 42, 46, 41, 45, 43, 47, 100, 104, 102, 106, 101, 105, 103, 107 };
 
         private static void WriteSgr(ArrayBufferWriter<byte> buffer, int code)
         {
@@ -570,6 +658,7 @@ namespace ConsoleRenderer
             {
                 buffer.Write(stackalloc byte[] { (byte)('0' + code) });
             }
+
             buffer.Write("m"u8);
         }
 
