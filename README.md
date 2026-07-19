@@ -47,11 +47,11 @@ This library doesn't enforce any type of output encoding by design, but I have f
 Unless you have a good reason to do otherwise, it's recommended to set `Console.OutputEncoding` to UTF8 in your application prior to rendering.
 
 ### Other projects made with ConsoleRenderer
-![afbeelding](https://www.ninovandermark.nl/img/mining-game.png)
+![afbeelding](https://raw.githubusercontent.com/NinovanderMark/ConsoleRenderer/refs/heads/main/screenshots/nino-mining-game.png)
 Unreleased mining game, by Nino van der Mark
 
 # What's the performance like?
-As of version [0.8](https://github.com/NinovanderMark/ConsoleRenderer/releases/tag/v0.8.0), which introduced a streaming approach to writing to the output, most examples run north of a couple of thousand FPS on Windows with a size of 120x30 characters. Examples that redraw major portions of the screen tend to clock in a bit lower at around 80fps. Performance on Linux and MacOS seems significantly better than that. 
+Most examples run north of a couple of thousand FPS on Windows with a size of 120x30 characters. Examples that redraw major portions of the screen tend to clock in a bit lower at around 80fps. Performance on Linux and MacOS seems significantly better than that. 
 
 All that said, no rigorous benchmarking has been done with the latest version, though I welcome any effort to do so. The bottomline is that it's plenty fast, and should be suitable for anything you might need for common terminal sizes.
 
